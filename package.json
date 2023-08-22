@@ -1,8 +1,8 @@
 {
-  "name": "open-one-tab",
-  "displayName": "Open one tab",
+  "name": "open-single-tab",
+  "displayName": "OpenSingleTab",
   "version": "0.0.1",
-  "description": "An open source one tab implementation.",
+  "description": "A browser extension to keep your tabs under control. Free and Open Source.",
   "author": "Federico Ponzi <me@fponzi.me>",
   "scripts": {
     "dev": "plasmo dev",
@@ -24,9 +24,9 @@
     "typescript": "5.1.6"
   },
   "manifest": {
-    "host_permissions": [
-      "https://*/*"
-    ],
-    "permissions": ["tabs", "storage"]
+    "permissions": [
+      "tabs",
+      "storage"
+    ]
   }
 }
