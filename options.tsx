@@ -4,7 +4,7 @@ function OptionsIndex() {
     return (
         <div>
             <h1>
-                OpenOneTab Options
+                OpenSingleTab Options
             </h1>
             <h2>You have found the Option UI page.</h2>
             <p>At the moment there are no options to set. Please come back later.</p>

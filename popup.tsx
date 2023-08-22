@@ -29,10 +29,10 @@ function IndexPopup() {
                 padding: 16,
                 width: "200px",
             }}>
-            <h2>OpenOneTab</h2>
-            <a href="https://github.com/FedericoPonzi/OpenOneTab" target="_blank">View Docs</a>
-            <button onClick={storeTabs}>Send to OpenOneTab</button>
-            <button onClick={openDisplayPage}>Display OpenOneTab</button>
+            <h2>OpenSingleTab</h2>
+            <a href="https://github.com/FedericoPonzi/OpenSingleTab" target="_blank">View Docs</a>
+            <button onClick={storeTabs}>Send to OpenSingleTab</button>
+            <button onClick={openDisplayPage}>Display OpenSingleTab</button>
         </div>
     )
 }
