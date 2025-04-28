@@ -1,10 +1,12 @@
 import React from "react";
 
 const linkUrl = `tabs/display.html`;
+const emptyTabUrl = "chrome://newtab";
 async function storeTabs() {
     const query_args = {pinned: false, currentWindow: true};
     chrome.tabs.query(query_args, function (tabs) {
         const tabUrls = tabs
+            .filter(tab => !tab.url.startsWith(emptyTabUrl))
             .filter(tab => tab.url !== chrome.runtime.getURL(linkUrl))
             .map((tab) => tab.url);
         chrome.storage.local.set({savedTabs: tabUrls}, function () {
@@ -13,7 +15,7 @@ async function storeTabs() {
     });
     chrome.tabs.query(query_args, function (tabs) {
         tabs.forEach((tab) => {
-            if (tab.url !== chrome.runtime.getURL(linkUrl)) {
+            if (tab.url !== chrome.runtime.getURL(linkUrl) && !tab.url.startsWith(emptyTabUrl)) {
                 chrome.tabs.remove(tab.id);
             }
         });
