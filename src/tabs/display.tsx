@@ -12,14 +12,14 @@ function OpenSingleTabDisplay() {
         });
     }, []);
 
-    const handleTabClick = (urlToRemove: string) => {
+    const handleTabClick = async (urlToRemove: string) => {
         // Open the clicked tab URL in a new tab
-        chrome.tabs.create({ url: urlToRemove, active: false });
+        await chrome.tabs.create({ url: urlToRemove, active: false });
 
         // Remove the clicked tab URL from storedTabs and update local storage
         const updatedTabs = storedTabs.filter((url) => url !== urlToRemove);
         setStoredTabs(updatedTabs);
-        chrome.storage.local.set({ savedTabs: updatedTabs });
+        await chrome.storage.local.set({ savedTabs: updatedTabs });
     };
 
     const openedTabs = storedTabs.length;
@@ -41,9 +41,9 @@ function OpenSingleTabDisplay() {
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={(e) => {
+                            onClick={async (e) => {
                                 e.preventDefault();
-                                handleTabClick(url);
+                                await handleTabClick(url);
                             }}
                         >
                             {url}
