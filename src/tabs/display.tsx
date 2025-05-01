@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
+
+// Interface for tab information
+interface TabInfo {
+    url: string;
+    title: string;
+    favicon: string;
+}
 
 // Interface for tab group structure
 interface TabGroup {
     timestamp: string;
-    tabs: string[];
+    tabs: TabInfo[];
 }
 
 function OpenSingleTabDisplay() {
@@ -16,54 +23,56 @@ function OpenSingleTabDisplay() {
         });
     }, []);
 
-    const handleTabClick = async (groupIndex: number, urlToRemove: string) => {
+    const handleTabClick = async (groupIndex: number, tabInfo: TabInfo) => {
         // Open the clicked tab URL in a new tab
-        await chrome.tabs.create({ url: urlToRemove, active: false });
+        await chrome.tabs.create({url: tabInfo.url, active: false});
 
         // Remove the clicked tab URL from the specific group
         const updatedGroups = [...tabGroups];
         updatedGroups[groupIndex].tabs = updatedGroups[groupIndex].tabs.filter(
-            (url) => url !== urlToRemove
+            (tab) => tab.url !== tabInfo.url
         );
-        
+
         // Remove empty groups
         const filteredGroups = updatedGroups.filter(group => group.tabs.length > 0);
-        
+
         setTabGroups(filteredGroups);
-        await chrome.storage.local.set({ tabGroups: filteredGroups });
+        await chrome.storage.local.set({tabGroups: filteredGroups});
     };
-    
+
     const openAllInNewWindow = async (groupIndex: number) => {
-        const urls = tabGroups[groupIndex].tabs;
-        if (urls.length > 0) {
-            // Create a new window with the first URL
-            const newWindow = await chrome.windows.create({ url: urls[0] });
-            
-            // Open the rest of the URLs in the new window
-            for (let i = 1; i < urls.length; i++) {
-                await chrome.tabs.create({ 
-                    url: urls[i], 
-                    windowId: newWindow.id,
-                    active: false 
-                });
-            }
-        }
+        const tabs = tabGroups[groupIndex].tabs;
         await deleteGroup(groupIndex);
+        if (tabs.length > 0) {
+            return;
+        }
+
+        // Create a new window with the first URL
+        const newWindow = await chrome.windows.create({url: tabs[0].url});
+
+        // Open the rest of the URLs in the new window
+        for (let i = 1; i < tabs.length; i++) {
+            await chrome.tabs.create({
+                url: tabs[i].url,
+                windowId: newWindow.id,
+                active: false
+            });
+        }
     };
-    
+
     const openAllInThisWindow = async (groupIndex: number) => {
-        const urls = tabGroups[groupIndex].tabs;
-        for (const url of urls) {
-            await chrome.tabs.create({ url, active: false });
+        const tabs = tabGroups[groupIndex].tabs;
+        for (const tab of tabs) {
+            await chrome.tabs.create({url: tab.url, active: false});
         }
         await deleteGroup(groupIndex);
     };
-    
+
     const deleteGroup = async (groupIndex: number) => {
         const updatedGroups = [...tabGroups];
         updatedGroups.splice(groupIndex, 1);
         setTabGroups(updatedGroups);
-        await chrome.storage.local.set({ tabGroups: updatedGroups });
+        await chrome.storage.local.set({tabGroups: updatedGroups});
     };
 
     const totalTabs = tabGroups.reduce((sum, group) => sum + group.tabs.length, 0);
@@ -80,7 +89,7 @@ function OpenSingleTabDisplay() {
                 <h2 style={{marginRight: "16px"}}>OpenSingleTab</h2>
                 <h4>Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
             </div>
-            
+
             {tabGroups.length === 0 ? (
                 <p>No saved tabs. Click "Send to OpenSingleTab" to save your open tabs.</p>
             ) : (
@@ -91,19 +100,19 @@ function OpenSingleTabDisplay() {
                                 Group: {group.timestamp} ({group.tabs.length} tabs)
                             </h3>
                             <div style={{display: "flex", gap: "8px"}}>
-                                <button 
+                                <button
+                                    onClick={() => openAllInThisWindow(groupIndex)}
+                                    style={{fontSize: "12px", padding: "4px 8px"}}
+                                >
+                                    Open all
+                                </button>
+                                <button
                                     onClick={() => openAllInNewWindow(groupIndex)}
                                     style={{fontSize: "12px", padding: "4px 8px"}}
                                 >
                                     Open all in new window
                                 </button>
-                                <button 
-                                    onClick={() => openAllInThisWindow(groupIndex)}
-                                    style={{fontSize: "12px", padding: "4px 8px"}}
-                                >
-                                    Open all in this window
-                                </button>
-                                <button 
+                                <button
                                     onClick={() => deleteGroup(groupIndex)}
                                     style={{fontSize: "12px", padding: "4px 8px"}}
                                 >
@@ -112,18 +121,31 @@ function OpenSingleTabDisplay() {
                             </div>
                         </div>
                         <ul style={{margin: 0}}>
-                            {group.tabs.map((url, tabIndex) => (
-                                <li key={`${groupIndex}-${tabIndex}`}>
+                            {group.tabs.map((tabInfo, tabIndex) => (
+                                <li key={`${groupIndex}-${tabIndex}`} style={{display: "flex", alignItems: "center", marginBottom: "8px"}}>
+                                    {tabInfo.favicon && (
+                                        <img 
+                                            src={tabInfo.favicon} 
+                                            alt="" 
+                                            style={{
+                                                width: "16px", 
+                                                height: "16px", 
+                                                marginRight: "8px",
+                                                objectFit: "contain"
+                                            }} 
+                                        />
+                                    )}
                                     <a
-                                        href={url}
+                                        href={tabInfo.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={async (e) => {
                                             e.preventDefault();
-                                            await handleTabClick(groupIndex, url);
+                                            await handleTabClick(groupIndex, tabInfo);
                                         }}
+                                        title={tabInfo.url}
                                     >
-                                        {url}
+                                        {tabInfo.title || tabInfo.url}
                                     </a>
                                 </li>
                             ))}

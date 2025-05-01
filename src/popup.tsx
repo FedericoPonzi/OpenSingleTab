@@ -3,24 +3,35 @@ import React from "react";
 const linkUrl = `tabs/display.html`;
 const emptyTabUrl = "chrome://newtab";
 
+// Interface for tab information
+interface TabInfo {
+    url: string;
+    title: string;
+    favicon: string;
+}
+
 // Interface for tab group structure
 interface TabGroup {
     timestamp: string;
-    tabs: string[];
+    tabs: TabInfo[];
 }
 
 async function storeTabs() {
     const query_args = {pinned: false, currentWindow: true};
     chrome.tabs.query(query_args, function (tabs) {
-        const tabUrls = tabs
+        const tabInfos = tabs
             .filter(tab => !tab.url.startsWith(emptyTabUrl))
             .filter(tab => tab.url !== chrome.runtime.getURL(linkUrl))
-            .map((tab) => tab.url);
+            .map((tab) => ({
+                url: tab.url,
+                title: tab.title || tab.url,
+                favicon: tab.favIconUrl || ""
+            }));
         
         // Create a new tab group with current timestamp
         const newTabGroup: TabGroup = {
             timestamp: new Date().toLocaleString(),
-            tabs: tabUrls
+            tabs: tabInfos
         };
         
         // Get existing tab groups and add the new one
