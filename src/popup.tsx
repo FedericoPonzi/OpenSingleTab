@@ -27,7 +27,7 @@ async function storeTabs() {
         
         const tabInfos = tabs
             .filter(tab => !tab.url.startsWith(emptyTabUrl))
-            .filter(tab => tab.url !== displayUrl)
+            .filter(tab => !tab.url.startsWith(extensionBaseUrl))
             .map((tab) => ({
                 url: tab.url,
                 title: tab.title || tab.url,
@@ -71,11 +71,14 @@ async function storeTabs() {
                     await chrome.tabs.remove(tab.id);
                 }
             }
-            await chrome.tabs.remove(activeTab);
         }
         
         // Open display page after storing tabs
         await openDisplayPage();
+
+        if(!data.keepTabsOpen) {
+            await chrome.tabs.remove(activeTab);
+        }
     } catch (error) {
         console.error("Error in storeTabs:", error);
     }
