@@ -16,6 +16,7 @@ interface TabInfo {
 interface TabGroup {
     timestamp: string;
     tabs: TabInfo[];
+    title?: string; // Optional title field for the group
 }
 
 async function storeTabs() {
@@ -41,7 +42,8 @@ async function storeTabs() {
         // Create a new tab group with current timestamp
         const newTabGroup: TabGroup = {
             timestamp: new Date().toLocaleString(),
-            tabs: tabInfos
+            tabs: tabInfos,
+            title: "Group" // Default title for the group
         };
         
         // Get existing tab groups and add the new one
