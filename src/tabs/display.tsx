@@ -22,6 +22,22 @@ function OpenSingleTabDisplay() {
         chrome.storage.local.get(["tabGroups", "savedTabs"], (data) => {
             setTabGroups(data.tabGroups);
         });
+
+        // Add storage change listener
+        const handleStorageChange = (changes: any, namespace: string) => {
+            if (namespace === 'local' && changes.tabGroups) {
+                // Update React state with the new value
+                setTabGroups(changes.tabGroups.newValue || []);
+            }
+        };
+
+        // Add the listener
+        chrome.storage.onChanged.addListener(handleStorageChange);
+
+        // Cleanup: remove listener when component unmounts
+        return () => {
+            chrome.storage.onChanged.removeListener(handleStorageChange);
+        };
     }, []);
 
     const handleTabClick = async (groupIndex: number, tabInfo: TabInfo) => {

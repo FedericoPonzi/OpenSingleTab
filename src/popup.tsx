@@ -86,7 +86,6 @@ async function openDisplayPage() {
             console.log("Display page already open, changing focus")
             let tab = tabs[0];
             // If a display page is already open, switch focus to it
-            await chrome.tabs.reload(tab.id);
             await chrome.tabs.update(tab.id, {active: true});
             await chrome.windows.update(tab.windowId, {focused: true});
         } else {
