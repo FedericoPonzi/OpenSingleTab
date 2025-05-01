@@ -1,8 +1,8 @@
 import React from "react";
 import "./style.css";
 
-const linkUrl = `tabs/display.html`;
-const emptyTabUrl = "chrome://newtab";
+const displayUrl = chrome.runtime.getURL(`tabs/display.html`);
+const emptyTabUrl = "chrome://";
 
 // Interface for tab information
 interface TabInfo {
@@ -18,16 +18,24 @@ interface TabGroup {
 }
 
 async function storeTabs() {
-    const query_args = {pinned: false, currentWindow: true};
-    chrome.tabs.query(query_args, function (tabs) {
+    try {
+        const query_args = {pinned: false, currentWindow: true};
+        
+        const tabs = await chrome.tabs.query(query_args);
+        
         const tabInfos = tabs
             .filter(tab => !tab.url.startsWith(emptyTabUrl))
-            .filter(tab => tab.url !== chrome.runtime.getURL(linkUrl))
+            .filter(tab => tab.url !== displayUrl)
             .map((tab) => ({
                 url: tab.url,
                 title: tab.title || tab.url,
                 favicon: tab.favIconUrl || ""
             }));
+
+        if (tabInfos.length == 0) {
+            await openDisplayPage();
+            return;
+        }
         
         // Create a new tab group with current timestamp
         const newTabGroup: TabGroup = {
@@ -36,28 +44,46 @@ async function storeTabs() {
         };
         
         // Get existing tab groups and add the new one
-        chrome.storage.local.get({tabGroups: []}, function (data) {
-            const updatedTabGroups = [newTabGroup, ...data.tabGroups];
-            chrome.storage.local.set({tabGroups: updatedTabGroups}, function () {
-                console.log("New tab group stored in local storage.");
-            });
-        });
-    });
-    
-    chrome.tabs.query(query_args, function (tabs) {
-        tabs.forEach((tab) => {
-            if (tab.url !== chrome.runtime.getURL(linkUrl) && !tab.url.startsWith(emptyTabUrl)) {
-                chrome.tabs.remove(tab.id);
+        const data = await chrome.storage.local.get({tabGroups: [], keepTabsOpen: false}) as {tabGroups: TabGroup[], keepTabsOpen: boolean};
+        if (chrome.runtime.lastError) {
+            console.error("Error retrieving data:", chrome.runtime.lastError);
+        }
+
+        const updatedTabGroups = [newTabGroup, ...data.tabGroups];
+        
+        // Save the updated tab groups
+        await chrome.storage.local.set({tabGroups: updatedTabGroups});
+        if (chrome.runtime.lastError) {
+            console.error("Error saving tab groups:", chrome.runtime.lastError);
+        }
+
+        // Check if we should close tabs based on user preference
+        if (!data.keepTabsOpen) {
+            // remove active for last
+            var activeTab = -1;
+            for (const tab of tabs) {
+                activeTab = tab.active ? tab.id : activeTab;
+                if (!tab.active && tab.url !== displayUrl && !tab.url.startsWith(emptyTabUrl)) {
+                    await chrome.tabs.remove(tab.id);
+                }
             }
-        });
-    });
-    await openDisplayPage();
+            await chrome.tabs.remove(activeTab);
+        }
+        
+        // Open display page after storing tabs
+        await openDisplayPage();
+    } catch (error) {
+        console.error("Error in storeTabs:", error);
+    }
 }
 
 async function openDisplayPage() {
-    // Check if a display page is already open
-    chrome.tabs.query({url: chrome.runtime.getURL(linkUrl)}, async function (tabs) {
+    try {
+        // Check if a display page is already open
+        const tabs = await chrome.tabs.query({url: displayUrl});
+
         if (tabs.length > 0) {
+            console.log("Display page already open, changing focus")
             let tab = tabs[0];
             // If a display page is already open, switch focus to it
             await chrome.tabs.reload(tab.id);
@@ -65,22 +91,34 @@ async function openDisplayPage() {
             await chrome.windows.update(tab.windowId, {focused: true});
         } else {
             // If no display page is open, create a new one
-            await chrome.tabs.create({url: linkUrl});
+            console.log("Display page not open, opening new tab")
+            await chrome.tabs.create({url: displayUrl});
         }
-    });
+    } catch (error) {
+        console.error("Error in openDisplayPage:", error);
+    }
 }
 
 function IndexPopup() {
     return (
         <div className="flex flex-col p-4 w-[200px]">
             <h2 className="text-xl font-bold mb-2">OpenSingleTab</h2>
-            <a 
-                href="https://github.com/FedericoPonzi/OpenSingleTab" 
-                target="_blank"
-                className="text-blue-600 hover:text-blue-800 mb-3"
-            >
-                View Docs
-            </a>
+            <div className="flex justify-between mb-3">
+                <a 
+                    href="https://github.com/FedericoPonzi/OpenSingleTab" 
+                    target="_blank"
+                    className="text-blue-600 hover:text-blue-800"
+                >
+                    View Docs
+                </a>
+                <a 
+                    href="options.html" 
+                    target="_blank"
+                    className="text-blue-600 hover:text-blue-800"
+                >
+                    Options
+                </a>
+            </div>
             <button 
                 onClick={storeTabs}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded mb-2"

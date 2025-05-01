@@ -40,33 +40,36 @@ function OpenSingleTabDisplay() {
         setTabGroups(filteredGroups);
         await chrome.storage.local.set({tabGroups: filteredGroups});
     };
-
-    const openAllInNewWindow = async (groupIndex: number) => {
+    const openGroupInWindow = async (groupIndex: number, windowId: number, startIndex: number = 0) => {
         const tabs = tabGroups[groupIndex].tabs;
         await deleteGroup(groupIndex);
-        if (tabs.length > 0) {
+        if (tabs.length == 0) {
             return;
         }
-
+     for (let i = startIndex; i < tabs.length; i++) {
+            let tab = tabs[i];
+            console.log("Opening tab: ", tab.url);
+            var t = windowId == undefined ? {url: tab.url, active: false} : {
+                url: tab.url,
+                active: false,
+                windowId: windowId
+            };
+            console.log(JSON.stringify(t));
+            await chrome.tabs.create(t);
+        }
+        console.log("Done opening group: ", groupIndex);
+    }
+    const openAllInNewWindow = async (groupIndex: number) => {
+        const tabs = tabGroups[groupIndex].tabs;
         // Create a new window with the first URL
         const newWindow = await chrome.windows.create({url: tabs[0].url});
-
         // Open the rest of the URLs in the new window
-        for (let i = 1; i < tabs.length; i++) {
-            await chrome.tabs.create({
-                url: tabs[i].url,
-                windowId: newWindow.id,
-                active: false
-            });
-        }
+        await openGroupInWindow(groupIndex, newWindow.id, 1);
     };
 
     const openAllInThisWindow = async (groupIndex: number) => {
-        const tabs = tabGroups[groupIndex].tabs;
-        for (const tab of tabs) {
-            await chrome.tabs.create({url: tab.url, active: false});
-        }
-        await deleteGroup(groupIndex);
+        console.log("Opening All in this window, group: ", groupIndex);
+        await openGroupInWindow(groupIndex, undefined);
     };
 
     const deleteGroup = async (groupIndex: number) => {
@@ -77,7 +80,7 @@ function OpenSingleTabDisplay() {
     };
 
     const totalTabs = tabGroups.reduce((sum, group) => sum + group.tabs.length, 0);
-
+    console.log("Loaded");
     return (
         <div className="flex flex-col p-4">
             <div className="flex items-baseline mb-4">
@@ -119,10 +122,10 @@ function OpenSingleTabDisplay() {
                             {group.tabs.map((tabInfo, tabIndex) => (
                                 <li key={`${groupIndex}-${tabIndex}`} className="flex items-center mb-2">
                                     {tabInfo.favicon && (
-                                        <img 
-                                            src={tabInfo.favicon} 
-                                            alt="" 
-                                            className="w-4 h-4 mr-2 object-contain" 
+                                        <img
+                                            src={tabInfo.favicon}
+                                            alt=""
+                                            className="w-4 h-4 mr-2 object-contain"
                                         />
                                     )}
                                     <a
