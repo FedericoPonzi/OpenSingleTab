@@ -9,6 +9,7 @@ A browser extension to keep your tabs under control. Free and Open Source.
 - Preserves previous tab groups when saving new tabs
 - Displays tab groups organized by their capture date and time
 - If a display page is already open, the extension will switch focus to it instead of opening a new tab
+- Modern UI with Tailwind CSS styling
 
 ## Download:
 * Firefox: https://addons.mozilla.org/en-US/firefox/addon/opensingletab/
@@ -16,4 +17,8 @@ A browser extension to keep your tabs under control. Free and Open Source.
 
 ## Development
 
-This project uses [Plasmo](https://docs.plasmo.com/) for browser extension development.
+This project uses [Plasmo](https://docs.plasmo.com/) for browser extension development and [Tailwind CSS](https://tailwindcss.com/) for styling.
+
+### Getting Started
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development instructions.

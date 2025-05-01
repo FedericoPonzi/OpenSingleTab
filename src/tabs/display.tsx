@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from "react";
+import "../style.css";
 
 // Interface for tab information
 interface TabInfo {
@@ -78,61 +79,50 @@ function OpenSingleTabDisplay() {
     const totalTabs = tabGroups.reduce((sum, group) => sum + group.tabs.length, 0);
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                padding: 16,
-            }}
-        >
-            <div style={{display: "flex", alignItems: "baseline"}}>
-                <h2 style={{marginRight: "16px"}}>OpenSingleTab</h2>
-                <h4>Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
+        <div className="flex flex-col p-4">
+            <div className="flex items-baseline mb-4">
+                <h2 className="text-2xl font-bold mr-4">OpenSingleTab</h2>
+                <h4 className="text-gray-600">Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
             </div>
 
             {tabGroups.length === 0 ? (
-                <p>No saved tabs. Click "Send to OpenSingleTab" to save your open tabs.</p>
+                <p className="text-gray-700">No saved tabs. Click "Send to OpenSingleTab" to save your open tabs.</p>
             ) : (
                 tabGroups.map((group, groupIndex) => (
-                    <div key={groupIndex} style={{marginBottom: "24px"}}>
-                        <div style={{display: "flex", alignItems: "center", marginBottom: "8px"}}>
-                            <h3 style={{marginRight: "16px", marginBottom: 0}}>
+                    <div key={groupIndex} className="mb-6 border-b pb-4 last:border-b-0">
+                        <div className="flex items-center mb-2">
+                            <h3 className="text-lg font-semibold mr-4 mb-0">
                                 Group: {group.timestamp} ({group.tabs.length} tabs)
                             </h3>
-                            <div style={{display: "flex", gap: "8px"}}>
+                            <div className="flex gap-2">
                                 <button
                                     onClick={() => openAllInThisWindow(groupIndex)}
-                                    style={{fontSize: "12px", padding: "4px 8px"}}
+                                    className="text-xs px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
                                 >
                                     Open all
                                 </button>
                                 <button
                                     onClick={() => openAllInNewWindow(groupIndex)}
-                                    style={{fontSize: "12px", padding: "4px 8px"}}
+                                    className="text-xs px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded"
                                 >
                                     Open all in new window
                                 </button>
                                 <button
                                     onClick={() => deleteGroup(groupIndex)}
-                                    style={{fontSize: "12px", padding: "4px 8px"}}
+                                    className="text-xs px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded"
                                 >
                                     Delete group
                                 </button>
                             </div>
                         </div>
-                        <ul style={{margin: 0}}>
+                        <ul className="m-0 list-none">
                             {group.tabs.map((tabInfo, tabIndex) => (
-                                <li key={`${groupIndex}-${tabIndex}`} style={{display: "flex", alignItems: "center", marginBottom: "8px"}}>
+                                <li key={`${groupIndex}-${tabIndex}`} className="flex items-center mb-2">
                                     {tabInfo.favicon && (
                                         <img 
                                             src={tabInfo.favicon} 
                                             alt="" 
-                                            style={{
-                                                width: "16px", 
-                                                height: "16px", 
-                                                marginRight: "8px",
-                                                objectFit: "contain"
-                                            }} 
+                                            className="w-4 h-4 mr-2 object-contain" 
                                         />
                                     )}
                                     <a
@@ -144,6 +134,7 @@ function OpenSingleTabDisplay() {
                                             await handleTabClick(groupIndex, tabInfo);
                                         }}
                                         title={tabInfo.url}
+                                        className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-full"
                                     >
                                         {tabInfo.title || tabInfo.url}
                                     </a>

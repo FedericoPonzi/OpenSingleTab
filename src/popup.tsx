@@ -1,4 +1,5 @@
 import React from "react";
+import "./style.css";
 
 const linkUrl = `tabs/display.html`;
 const emptyTabUrl = "chrome://newtab";
@@ -71,17 +72,27 @@ async function openDisplayPage() {
 
 function IndexPopup() {
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                padding: 16,
-                width: "200px",
-            }}>
-            <h2>OpenSingleTab</h2>
-            <a href="https://github.com/FedericoPonzi/OpenSingleTab" target="_blank">View Docs</a>
-            <button onClick={storeTabs}>Send to OpenSingleTab</button>
-            <button onClick={openDisplayPage}>Display OpenSingleTab</button>
+        <div className="flex flex-col p-4 w-[200px]">
+            <h2 className="text-xl font-bold mb-2">OpenSingleTab</h2>
+            <a 
+                href="https://github.com/FedericoPonzi/OpenSingleTab" 
+                target="_blank"
+                className="text-blue-600 hover:text-blue-800 mb-3"
+            >
+                View Docs
+            </a>
+            <button 
+                onClick={storeTabs}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded mb-2"
+            >
+                Send to OpenSingleTab
+            </button>
+            <button 
+                onClick={openDisplayPage}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-2 rounded"
+            >
+                Display OpenSingleTab
+            </button>
         </div>
     )
 }
