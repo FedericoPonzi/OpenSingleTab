@@ -2,6 +2,7 @@ import React from "react";
 import "./style.css";
 
 const displayUrl = chrome.runtime.getURL(`tabs/display.html`);
+const extensionBaseUrl = chrome.runtime.getURL(``);
 const emptyTabUrl = "chrome://";
 
 // Interface for tab information
@@ -63,7 +64,8 @@ async function storeTabs() {
             var activeTab = -1;
             for (const tab of tabs) {
                 activeTab = tab.active ? tab.id : activeTab;
-                if (!tab.active && tab.url !== displayUrl && !tab.url.startsWith(emptyTabUrl)) {
+                const isExtTab = tab.url.startsWith(extensionBaseUrl);
+                if (!tab.active && !isExtTab && !tab.url.startsWith(emptyTabUrl)) {
                     await chrome.tabs.remove(tab.id);
                 }
             }
