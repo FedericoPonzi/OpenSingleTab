@@ -2,6 +2,13 @@ import React from "react";
 
 const linkUrl = `tabs/display.html`;
 const emptyTabUrl = "chrome://newtab";
+
+// Interface for tab group structure
+interface TabGroup {
+    timestamp: string;
+    tabs: string[];
+}
+
 async function storeTabs() {
     const query_args = {pinned: false, currentWindow: true};
     chrome.tabs.query(query_args, function (tabs) {
@@ -9,10 +16,22 @@ async function storeTabs() {
             .filter(tab => !tab.url.startsWith(emptyTabUrl))
             .filter(tab => tab.url !== chrome.runtime.getURL(linkUrl))
             .map((tab) => tab.url);
-        chrome.storage.local.set({savedTabs: tabUrls}, function () {
-            console.log("Tabs stored in local storage.");
+        
+        // Create a new tab group with current timestamp
+        const newTabGroup: TabGroup = {
+            timestamp: new Date().toLocaleString(),
+            tabs: tabUrls
+        };
+        
+        // Get existing tab groups and add the new one
+        chrome.storage.local.get({tabGroups: []}, function (data) {
+            const updatedTabGroups = [newTabGroup, ...data.tabGroups];
+            chrome.storage.local.set({tabGroups: updatedTabGroups}, function () {
+                console.log("New tab group stored in local storage.");
+            });
         });
     });
+    
     chrome.tabs.query(query_args, function (tabs) {
         tabs.forEach((tab) => {
             if (tab.url !== chrome.runtime.getURL(linkUrl) && !tab.url.startsWith(emptyTabUrl)) {

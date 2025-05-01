@@ -5,7 +5,9 @@
 A browser extension to keep your tabs under control. Free and Open Source.
 
 ## Features
-- Stores all your open tabs in a single page
+- Stores all your open tabs in groups with timestamps
+- Preserves previous tab groups when saving new tabs
+- Displays tab groups organized by their capture date and time
 - If a display page is already open, the extension will switch focus to it instead of opening a new tab
 
 ## Download:
