@@ -118,6 +118,22 @@ function EditableGroupTitle({ title, onSave }: EditableGroupTitleProps) {
 
 function OpenSingleTabDisplay() {
     const [tabGroups, setTabGroups] = useState<TabGroup[]>([]);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.menu-container')) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     useEffect(() => {
         // Retrieve stored tab groups from local storage
@@ -219,9 +235,47 @@ function OpenSingleTabDisplay() {
     console.log("Loaded");
     return (
         <div className="flex flex-col p-4">
-            <div className="flex items-baseline mb-4">
-                <h2 className="text-2xl font-bold mr-4">OpenSingleTab</h2>
-                <h4 className="text-gray-600">Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
+            <div className="flex items-baseline justify-between mb-4">
+                <div className="flex items-baseline">
+                    <h2 className="text-2xl font-bold mr-4">OpenSingleTab</h2>
+                    <h4 className="text-gray-600">Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
+                </div>
+                <div className="relative menu-container">
+                    <button 
+                        className="text-gray-700 hover:text-blue-600 focus:outline-none"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        aria-label="Menu"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                    {isMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <div className="py-1">
+                                <a 
+                                    href="import-export.html" 
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Import / Export tabs
+                                </a>
+                                <a 
+                                    href="../options.html" 
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Options
+                                </a>
+                                <a 
+                                    href="https://github.com/FedericoPonzi/OpenSingleTab" 
+                                    target="_blank"
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Info/Feedback
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {tabGroups.length === 0 ? (
