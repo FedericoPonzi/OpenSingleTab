@@ -5,11 +5,13 @@
 A browser extension to keep your tabs under control. Free and Open Source.
 
 ## Features
-- Stores all your open tabs in groups with timestamps
-- Preserves previous tab groups when saving new tabs
-- Displays tab groups organized by their capture date and time
-- If a display page is already open, the extension will switch focus to it instead of opening a new tab
-- Modern UI with Tailwind CSS styling
+Save RAM and keep your tabs organized by sending them to OpenSingleTab.
+
+- Store all your open tabs in groups with timestamps. Give a custom name to each group
+- Tabs are organized by their capture timestamp automatically
+- Import and export tabs
+- Simple and clean style
+- No ads, spam and minimal permissions.
 
 ## Download:
 * Firefox: https://addons.mozilla.org/en-US/firefox/addon/opensingletab/
