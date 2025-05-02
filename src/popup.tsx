@@ -1,5 +1,6 @@
 import React from "react";
 import "./style.css";
+import Footer from "./components/Footer";
 
 const displayUrl = chrome.runtime.getURL(`tabs/display.html`);
 const extensionBaseUrl = chrome.runtime.getURL(``);
@@ -137,6 +138,7 @@ function IndexPopup() {
             >
                 Display OpenSingleTab
             </button>
+            <Footer className="mt-4" />
         </div>
     )
 }

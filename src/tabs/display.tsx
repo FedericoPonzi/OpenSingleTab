@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
 import "../style.css";
+import Footer from "../components/Footer";
 
 // Interface for tab information
 interface TabInfo {
@@ -343,6 +344,8 @@ function OpenSingleTabDisplay() {
                     </div>
                 ))
             )}
+            
+            <Footer className="mt-8 border-t pt-4" />
         </div>
     );
 }

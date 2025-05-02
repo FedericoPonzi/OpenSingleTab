@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import "./style.css"
+import Footer from "./components/Footer"
 
 function OptionsIndex() {
     const [keepTabsOpen, setKeepTabsOpen] = useState(false);
@@ -49,6 +50,8 @@ function OptionsIndex() {
             >
                 Display OpenSingleTab
             </a>
+
+            <Footer className="mt-8" />
         </div>
     )
 }

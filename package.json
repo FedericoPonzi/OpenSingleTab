@@ -5,8 +5,9 @@
   "description": "A browser extension to keep your tabs under control. Free and Open Source.",
   "author": "Federico Ponzi <me@fponzi.me>",
   "scripts": {
-    "dev": "plasmo dev",
-    "build": "plasmo build",
+    "get-git-hash": "node scripts/get-git-hash.js",
+    "dev": "npm run get-git-hash && plasmo dev",
+    "build": "npm run get-git-hash && plasmo build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
