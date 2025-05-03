@@ -159,6 +159,73 @@ function OpenSingleTabDisplay() {
         };
     }, []);
 
+    // Effect to check for pendingWindowId and collect tabs from that window
+    useEffect(() => {
+        const collectTabsFromPendingWindow = async () => {             // Check if there's a pendingWindowId in localStorage
+                const data = await chrome.storage.local.get({pendingWindowId: null});
+                const pendingWindowId = data.pendingWindowId;
+
+                if (!pendingWindowId) {
+                    console.log("No pending windowId found");
+                    return;
+                }
+
+                console.log("Found pending windowId:", pendingWindowId);
+
+                // Clear the pendingWindowId immediately to prevent duplicate processing
+                await chrome.storage.local.remove("pendingWindowId");
+
+                const allTabs = await chrome.tabs.query({windowId: pendingWindowId});
+                const tabs = allTabs.filter(tab => tab.windowId === pendingWindowId);
+
+                const extensionBaseUrl = chrome.runtime.getURL(``);
+                const emptyTabUrl = "chrome://";
+                const firefoxEmptyTabUrl = "about:"; // Firefox equivalent of chrome://
+
+                let tabInfos = tabs
+                    .filter(tab => !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl))
+                    .filter(tab => !tab.url.startsWith(extensionBaseUrl))
+                    .map((tab) => ({
+                        url: tab.url,
+                        title: tab.title || tab.url,
+                        favicon: tab.favIconUrl || ""
+                    }));
+
+                if (tabInfos.length === 0) {
+                    console.log("No valid tabs found in the specified window");
+                    return;
+                }
+
+                // Create a new tab group with current timestamp
+                const newTabGroup: TabGroup = {
+                    timestamp: new Date().toLocaleString(),
+                    tabs: tabInfos,
+                    title: "Group" // Default title for the group
+                };
+
+                // Get existing tab groups and add the new one
+                const storageData = await chrome.storage.local.get({tabGroups: []});
+                const updatedTabGroups = [newTabGroup, ...(storageData.tabGroups || [])];
+
+                // Save the updated tab groups
+                await chrome.storage.local.set({tabGroups: updatedTabGroups});
+                for (const tab of tabs) {
+                    const isExtTab = tab.url.startsWith(extensionBaseUrl);
+                    if (!isExtTab && !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl)) {
+                        await chrome.tabs.remove(tab.id);
+                    }
+                }
+        };
+
+        // Add the listener
+        chrome.storage.onChanged.addListener(collectTabsFromPendingWindow);
+
+        // Cleanup: remove listener when component unmounts
+        return () => {
+            chrome.storage.onChanged.removeListener(collectTabsFromPendingWindow);
+        };
+    }, []);
+
     const handleTabClick = async (groupIndex: number, tabInfo: TabInfo) => {
         // Open the clicked tab URL in a new tab
         await chrome.tabs.create({url: tabInfo.url, active: false});

@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 const displayUrl = chrome.runtime.getURL(`tabs/display.html`);
 const extensionBaseUrl = chrome.runtime.getURL(``);
 const emptyTabUrl = "chrome://";
+const firefoxEmptyTabUrl = "about://"; // Firefox equivalent of chrome://
 
 // Interface for tab information
 interface TabInfo {
@@ -20,68 +21,22 @@ interface TabGroup {
     title?: string; // Optional title field for the group
 }
 
+/**
+ * Not 100% how an extension works, but this is my intuition. The javascript code is run within this page/tab. So while we're in this page
+ * the flow of execution continues. As soon as we switch tab, the Process Counter is reset and we can't anything else.
+ * So how do we collect the last page and switch to the display page? It's a chicken and egg problem
+ * so instead, we store in localstorage the window id, switch to display page and then from there we can collect the
+ * tabs from the pending window id.
+ */
 async function storeTabs() {
-    try {
-        const query_args = {pinned: false, currentWindow: true};
-        
-        const tabs = await chrome.tabs.query(query_args);
-        
-        const tabInfos = tabs
-            .filter(tab => !tab.url.startsWith(emptyTabUrl))
-            .filter(tab => !tab.url.startsWith(extensionBaseUrl))
-            .map((tab) => ({
-                url: tab.url,
-                title: tab.title || tab.url,
-                favicon: tab.favIconUrl || ""
-            }));
+    const query_args = {pinned: false, currentWindow: true};
+    const tabs = await chrome.tabs.query(query_args);
 
-        if (tabInfos.length == 0) {
-            await openDisplayPage();
-            return;
-        }
-        
-        // Create a new tab group with current timestamp
-        const newTabGroup: TabGroup = {
-            timestamp: new Date().toLocaleString(),
-            tabs: tabInfos,
-            title: "Group" // Default title for the group
-        };
-        
-        // Get existing tab groups and add the new one
-        const data = await chrome.storage.local.get({tabGroups: [], keepTabsOpen: false}) as {tabGroups: TabGroup[], keepTabsOpen: boolean};
-        if (chrome.runtime.lastError) {
-            console.error("Error retrieving data:", chrome.runtime.lastError);
-        }
-
-        const updatedTabGroups = [newTabGroup, ...data.tabGroups];
-        
-        // Save the updated tab groups
-        await chrome.storage.local.set({tabGroups: updatedTabGroups});
-        if (chrome.runtime.lastError) {
-            console.error("Error saving tab groups:", chrome.runtime.lastError);
-        }
-
-        // Check if we should close tabs based on user preference
-        if (!data.keepTabsOpen) {
-            // remove active for last
-            var activeTab = -1;
-            for (const tab of tabs) {
-                activeTab = tab.active ? tab.id : activeTab;
-                const isExtTab = tab.url.startsWith(extensionBaseUrl);
-                if (!tab.active && !isExtTab && !tab.url.startsWith(emptyTabUrl)) {
-                    await chrome.tabs.remove(tab.id);
-                }
-            }
-        }
-        
-        // Open display page after storing tabs
+    // Store the current windowId in localStorage
+    if (tabs.length > 0 && tabs[0].windowId) {
+        await chrome.storage.local.set({pendingWindowId: tabs[0].windowId});
+        console.log("Stored windowId in localStorage:", tabs[0].windowId);
         await openDisplayPage();
-
-        if(!data.keepTabsOpen) {
-            await chrome.tabs.remove(activeTab);
-        }
-    } catch (error) {
-        console.error("Error in storeTabs:", error);
     }
 }
 
