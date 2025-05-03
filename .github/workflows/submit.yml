@@ -1,6 +1,5 @@
 name: "Submit to Web Store"
 on:
-  # todo: submit on tag instead of workflow_dispatch.
   workflow_dispatch:
   push:
     tags:
