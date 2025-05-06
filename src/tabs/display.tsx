@@ -161,6 +161,7 @@ function OpenSingleTabDisplay() {
 
     // Effect to check for pendingWindowId and collect tabs from that window
     useEffect(() => {
+        console.log("Setting up listener for pending windowId")
         const collectTabsFromPendingWindow = async () => {             // Check if there's a pendingWindowId in localStorage
                 const data = await chrome.storage.local.get({pendingWindowId: null});
                 const pendingWindowId = data.pendingWindowId;
@@ -225,6 +226,10 @@ function OpenSingleTabDisplay() {
                     }
                 }
         };
+        // if the user called send to opensingletab
+        // but the display page was not open
+        // we missed the onchange call. But the window id is there, so we can act on it
+        collectTabsFromPendingWindow();
 
         // Add the listener
         chrome.storage.onChanged.addListener(collectTabsFromPendingWindow);
