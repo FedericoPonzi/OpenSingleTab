@@ -172,6 +172,8 @@ function OpenSingleTabDisplay() {
 
                 console.log("Found pending windowId:", pendingWindowId);
 
+                const currentWindowId = (await chrome.tabs.query({pinned: false, currentWindow: true}))[0].windowId;
+
                 // Clear the pendingWindowId immediately to prevent duplicate processing
                 await chrome.storage.local.remove("pendingWindowId");
 
@@ -209,6 +211,13 @@ function OpenSingleTabDisplay() {
 
                 // Save the updated tab groups
                 await chrome.storage.local.set({tabGroups: updatedTabGroups});
+
+                // Finally do a cleanup. If the window is different, we simply close it
+                if(pendingWindowId != currentWindowId){
+                    await chrome.windows.remove(pendingWindowId);
+                    return;
+                }
+                // Otherwise we need to iterate through all the tabs
                 for (const tab of tabs) {
                     const isExtTab = tab.url.startsWith(extensionBaseUrl);
                     if (!isExtTab && !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl)) {
