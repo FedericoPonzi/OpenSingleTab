@@ -44,7 +44,7 @@ jobs:
       - name: Package the extension into a zip artifact
         run: pnpm build --target=chrome-mv3 --zip
       - name: Package the extension into a zip artifact for firefox
-        run: pnpm build --target=firefox-mv2 --zip
+        run: pnpm build --target=firefox-mv3 --zip
 
       - name: Browser Platform Publish
         uses: PlasmoHQ/bpp@v3
@@ -52,6 +52,6 @@ jobs:
           keys: ${{ secrets.SUBMIT_KEYS }}
           artifact: build/chrome-mv3-prod.zip
           chrome-file: "build/chrome-mv3-prod.zip"
-          firefox-file: "build/firefox-mv2-prod.zip"
+          firefox-file: "build/firefox-mv3-prod.zip"
           #version-file: "src/manifest.json"
           verbose: true
