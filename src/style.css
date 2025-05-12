@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.5;
+  border: 2px dashed #3b82f6; /* blue-500 */
+}
+
+/* Styles for dark mode compatibility */
+@media (prefers-color-scheme: dark) {
+  .dragging {
+    border-color: #60a5fa; /* blue-400 */
+  }
+}
+
+/* Accessibility focus styles */
+li[draggable="true"]:focus-visible {
+  outline: 2px solid #3b82f6; /* blue-500 */
+  outline-offset: 2px;
+}
+
+/* Hover effect for draggable items */
+li[draggable="true"]:hover {
+  background-color: rgba(59, 130, 246, 0.1); /* blue-500 with 10% opacity */
+}
