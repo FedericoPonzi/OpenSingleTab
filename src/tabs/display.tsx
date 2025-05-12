@@ -252,15 +252,13 @@ function OpenSingleTabDisplay() {
         };
     }, []);
 
-    const handleTabClick = async (groupIndex: number, tabInfo: TabInfo) => {
+    const handleTabClick = async (groupIndex: number, tabInfo: TabInfo, tabIndex: number) => {
         // Open the clicked tab URL in a new tab
         await chrome.tabs.create({url: tabInfo.url, active: false});
 
-        // Remove the clicked tab URL from the specific group
+        // Remove only the specific tab that was clicked
         const updatedGroups = [...tabGroups];
-        updatedGroups[groupIndex].tabs = updatedGroups[groupIndex].tabs.filter(
-            (tab) => tab.url !== tabInfo.url
-        );
+        updatedGroups[groupIndex].tabs.splice(tabIndex, 1);
 
         // Remove empty groups
         const filteredGroups = updatedGroups.filter(group => group.tabs.length > 0);
@@ -653,7 +651,7 @@ function OpenSingleTabDisplay() {
                                         rel="noopener noreferrer"
                                         onClick={async (e) => {
                                             e.preventDefault();
-                                            await handleTabClick(groupIndex, tabInfo);
+                                            await handleTabClick(groupIndex, tabInfo, tabIndex);
                                         }}
                                         title={tabInfo.url}
                                         className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-full"
