@@ -16,13 +16,6 @@ interface TabGroup {
     title?: string; // Optional title field for the group
 }
 
-// Interface for drag item data
-interface DragItemData {
-    groupIndex: number;
-    tabIndex: number;
-    tabInfo: TabInfo;
-}
-
 // EditableGroupTitle component for handling editable titles
 interface EditableGroupTitleProps {
     title: string;
@@ -124,14 +117,26 @@ function EditableGroupTitle({ title, onSave }: EditableGroupTitleProps) {
     );
 }
 
+// Interface for drag state
+interface DragState {
+    groupIndex: number;
+    tabIndex: number;
+    tab: TabInfo;
+}
+
+// Interface for drop target state
+interface DropTargetState {
+    groupIndex: number;
+    position: 'top' | 'bottom' | 'between' | 'into';
+}
+
 function OpenSingleTabDisplay() {
     const [tabGroups, setTabGroups] = useState<TabGroup[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [draggedItem, setDraggedItem] = useState<DragItemData | null>(null);
-    const [dragOverGroupIndex, setDragOverGroupIndex] = useState<number | null>(null);
-    const [dragOverTabIndex, setDragOverTabIndex] = useState<number | null>(null);
     const [statusMessage, setStatusMessage] = useState<string>("");
     const statusRef = useRef<HTMLDivElement>(null);
+    const [draggedItem, setDraggedItem] = useState<DragState | null>(null);
+    const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -323,163 +328,76 @@ function OpenSingleTabDisplay() {
         }
     };
 
-    // Drag and drop handlers
-    const handleDragStart = (groupIndex: number, tabIndex: number, tabInfo: TabInfo) => (e: React.DragEvent<HTMLLIElement>) => {
-        // Set the drag data
-        setDraggedItem({
-            groupIndex,
-            tabIndex,
-            tabInfo
-        });
-        
-        // Set the drag image (optional)
-        if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move';
-            // Set a custom drag image if needed
-            const dragImage = document.createElement('div');
-            dragImage.textContent = tabInfo.title || tabInfo.url;
-            dragImage.style.position = 'absolute';
-            dragImage.style.top = '-1000px';
-            document.body.appendChild(dragImage);
-            e.dataTransfer.setDragImage(dragImage, 0, 0);
-            setTimeout(() => {
-                document.body.removeChild(dragImage);
-            }, 0);
-        }
-        
-        // Add a class to the dragged element for visual feedback
-        e.currentTarget.classList.add('dragging');
-        
-        // Set status message for screen readers
-        const groupTitle = tabGroups[groupIndex].title || `Group ${groupIndex + 1}`;
-        setStatusMessage(`Dragging tab: ${tabInfo.title || tabInfo.url} from group: ${groupTitle}`);
+    const handleDragStart = (groupIndex: number, tabIndex: number, tab: TabInfo) => {
+        setDraggedItem({ groupIndex, tabIndex, tab });
     };
 
-    const handleDragEnd = (e: React.DragEvent<HTMLLIElement>) => {
-        // Remove visual feedback
-        e.currentTarget.classList.remove('dragging');
-        
-        // Reset drag state
+    const handleDragEnd = () => {
         setDraggedItem(null);
-        setDragOverGroupIndex(null);
-        setDragOverTabIndex(null);
-        setStatusMessage("");
+        setDropTarget(null);
     };
 
-    const handleDragOver = (groupIndex: number, tabIndex: number) => (e: React.DragEvent<HTMLLIElement>) => {
-        // Prevent default to allow drop
+    const handleDragOver = (e: React.DragEvent, groupIndex: number, position: 'top' | 'bottom' | 'between' | 'into') => {
         e.preventDefault();
-        e.stopPropagation();
-        
-        // Update the drag over state
-        setDragOverGroupIndex(groupIndex);
-        setDragOverTabIndex(tabIndex);
-        
-        if (e.dataTransfer) {
-            e.dataTransfer.dropEffect = 'move';
-        }
-        
-        // Update status message for screen readers
-        if (draggedItem) {
-            const sourceGroupTitle = tabGroups[draggedItem.groupIndex].title || `Group ${draggedItem.groupIndex + 1}`;
-            const targetGroupTitle = tabGroups[groupIndex].title || `Group ${groupIndex + 1}`;
-            const targetTabTitle = tabGroups[groupIndex].tabs[tabIndex].title || tabGroups[groupIndex].tabs[tabIndex].url;
-            
-            setStatusMessage(`Moving tab from ${sourceGroupTitle} to ${targetGroupTitle}, before tab: ${targetTabTitle}`);
-        }
-    };
-
-    const handleGroupDragOver = (groupIndex: number) => (e: React.DragEvent<HTMLUListElement>) => {
-        // Prevent default to allow drop
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Update the drag over state
-        setDragOverGroupIndex(groupIndex);
-        setDragOverTabIndex(null);
-        
-        if (e.dataTransfer) {
-            e.dataTransfer.dropEffect = 'move';
-        }
-        
-        // Update status message for screen readers
-        if (draggedItem) {
-            const sourceGroupTitle = tabGroups[draggedItem.groupIndex].title || `Group ${draggedItem.groupIndex + 1}`;
-            const targetGroupTitle = tabGroups[groupIndex].title || `Group ${groupIndex + 1}`;
-            
-            setStatusMessage(`Moving tab from ${sourceGroupTitle} to the end of ${targetGroupTitle}`);
-        }
-    };
-
-    const handleDrop = (targetGroupIndex: number, targetTabIndex: number | null) => (e: React.DragEvent<HTMLLIElement | HTMLUListElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // If no item is being dragged or it's the same position, do nothing
         if (!draggedItem) return;
         
-        const { groupIndex: sourceGroupIndex, tabIndex: sourceTabIndex, tabInfo } = draggedItem;
-        
-        // If dropping in the same group and same position, do nothing
-        if (sourceGroupIndex === targetGroupIndex && sourceTabIndex === targetTabIndex) {
+        // Don't allow dropping into the same group
+        if (position === 'into' && draggedItem.groupIndex === groupIndex) {
+            setDropTarget(null);
             return;
         }
         
-        // Create a deep copy of the tab groups
-        const updatedGroups = JSON.parse(JSON.stringify(tabGroups)) as TabGroup[];
-        
-        // Remove the tab from the source group
-        updatedGroups[sourceGroupIndex].tabs.splice(sourceTabIndex, 1);
-        
-        // If the source group is now empty, remove it
+        setDropTarget({ groupIndex, position });
+    };
+
+    const moveTab = async (sourceGroupIndex: number, sourceTabIndex: number, targetGroupIndex: number, position: 'top' | 'bottom' | 'between' | 'into') => {
+        const updatedGroups = [...tabGroups];
+        const [movedTab] = updatedGroups[sourceGroupIndex].tabs.splice(sourceTabIndex, 1);
+
+        // If the source group is empty after removing the tab, remove it
         if (updatedGroups[sourceGroupIndex].tabs.length === 0) {
             updatedGroups.splice(sourceGroupIndex, 1);
-
-            // Adjust the target group index if it's after the removed group
+            // Adjust target index if it's after the removed group
             if (targetGroupIndex > sourceGroupIndex) {
                 targetGroupIndex--;
             }
         }
-        
-        // Add the tab to the target group
-        if (targetTabIndex === null) {
-            // If dropping on the group (not a specific tab), add to the end
-            updatedGroups[targetGroupIndex].tabs.push(tabInfo);
-        } else {
-            // If dropping on a specific tab, insert at that position
-            updatedGroups[targetGroupIndex].tabs.splice(targetTabIndex, 0, tabInfo);
+
+        // Handle different drop positions
+        switch (position) {
+            case 'top':
+                updatedGroups.unshift({ timestamp: new Date().toLocaleString(), tabs: [movedTab], title: "New Group" });
+                break;
+            case 'bottom':
+                updatedGroups.push({ timestamp: new Date().toLocaleString(), tabs: [movedTab], title: "New Group" });
+                break;
+            case 'between':
+                // Insert new group between existing groups
+                updatedGroups.splice(targetGroupIndex + 1, 0, { 
+                    timestamp: new Date().toLocaleString(), 
+                    tabs: [movedTab], 
+                    title: "New Group" 
+                });
+                break;
+            case 'into':
+                // Add to existing group
+                updatedGroups[targetGroupIndex].tabs.push(movedTab);
+                break;
         }
-        
-        // Update state and storage
+
         setTabGroups(updatedGroups);
-        chrome.storage.local.set({tabGroups: updatedGroups})
-            .then(() => {
-                const sourceGroupTitle = tabGroups[sourceGroupIndex].title || `Group ${sourceGroupIndex + 1}`;
-                const targetGroupTitle = tabGroups[targetGroupIndex].title || `Group ${targetGroupIndex + 1}`;
-                setStatusMessage(`Tab moved from ${sourceGroupTitle} to ${targetGroupTitle}`);
-                
-                // Clear status message after a delay
-                setTimeout(() => {
-                    setStatusMessage("");
-                }, 3000);
-                
-                console.log(`Tab moved from group ${sourceGroupIndex} to group ${targetGroupIndex}`);
-            })
-            .catch(error => {
-                console.error("Error moving tab:", error);
-                // Revert to original state if there's an error
-                chrome.storage.local.get({tabGroups: []})
-                    .then(data => {
-                        setTabGroups(data.tabGroups || []);
-                        setStatusMessage("Error moving tab. Please try again.");
-                    });
-            });
-        
-        // Reset drag state
-        setDraggedItem(null);
-        setDragOverGroupIndex(null);
-        setDragOverTabIndex(null);
+        await chrome.storage.local.set({ tabGroups: updatedGroups });
     };
+
+    const handleDrop = async (e: React.DragEvent, targetGroupIndex: number, position: 'top' | 'bottom' | 'between' | 'into') => {
+        e.preventDefault();
+        if (!draggedItem) return;
+
+        await moveTab(draggedItem.groupIndex, draggedItem.tabIndex, targetGroupIndex, position);
+        setDraggedItem(null);
+        setDropTarget(null);
+    };
+
 
     const totalTabs = tabGroups.reduce((sum, group) => sum + group.tabs.length, 0);
     console.log("Loaded");
@@ -540,129 +458,133 @@ function OpenSingleTabDisplay() {
                 </div>
             )}
 
+            {/* Drop zone for top of all groups */}
+            <div
+                className={`transition-all h-4 -mt-2 mb-2 ${
+                    draggedItem ? 'border-t-2 border-dashed' : ''
+                } ${
+                    dropTarget?.position === 'top' ? 'border-blue-500' : 'border-transparent'
+                }`}
+                onDragOver={(e) => handleDragOver(e, 0, 'top')}
+                onDrop={(e) => handleDrop(e, 0, 'top')}
+            />
+
             {tabGroups.length === 0 ? (
                 <p className="text-gray-700">No saved tabs. Click "Send to OpenSingleTab" to save your open tabs.</p>
             ) : (
-                tabGroups.map((group, groupIndex) => (
-                    <div key={groupIndex} className="mb-6 border-b pb-4 last:border-b-0">
-                        <div className="flex items-center mb-2">
-                            <div className="flex items-center mr-4">
-                                <EditableGroupTitle 
-                                    title={group.title || "Group"} 
-                                    onSave={(newTitle) => updateGroupTitle(groupIndex, newTitle)} 
-                                />
-                                <span className="text-gray-600 ml-2">
-                                    {group.timestamp} ({group.tabs.length} tabs)
-                                </span>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => openAllInThisWindow(groupIndex)}
-                                    className="text-xs px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
-                                >
-                                    Open all
-                                </button>
-                                <button
-                                    onClick={() => openAllInNewWindow(groupIndex)}
-                                    className="text-xs px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded"
-                                >
-                                    Open all in new window
-                                </button>
-                                <button
-                                    onClick={() => deleteGroup(groupIndex)}
-                                    className="text-xs px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded"
-                                >
-                                    Delete group
-                                </button>
-                            </div>
-                        </div>
-                        <ul 
-                            className="m-0 list-none"
-                            onDragOver={handleGroupDragOver(groupIndex)}
-                            onDrop={handleDrop(groupIndex, null)}
-                            tabIndex={0}
-                            role="region"
-                            aria-label={`Tab group: ${group.title || "Group"}`}
-                            onKeyDown={(e) => {
-                                // Handle keyboard navigation for dropping into a group
-                                if ((e.key === ' ' || e.key === 'Enter') && draggedItem) {
-                                    e.preventDefault();
-                                    handleDrop(groupIndex, null)(e as unknown as React.DragEvent<HTMLUListElement | HTMLLIElement>);
-                                }
-                            }}
-                        >
-                            {group.tabs.map((tabInfo, tabIndex) => (
-                                <li 
-                                    key={`${groupIndex}-${tabIndex}`} 
-                                    className={`flex items-center mb-2 p-1 rounded cursor-move ${
-                                        draggedItem && draggedItem.groupIndex === groupIndex && draggedItem.tabIndex === tabIndex
-                                            ? 'opacity-50'
-                                            : ''
-                                    } ${
-                                        dragOverGroupIndex === groupIndex && dragOverTabIndex === tabIndex
-                                            ? 'bg-blue-100 dark:bg-blue-900'
+                <>
+                    {tabGroups.map((group, groupIndex) => (
+                        <div key={groupIndex}>
+                            <div className="mb-2 pb-1 last:border-b-0">
+                                <div className="flex items-center mb-2">
+                                    <div className="flex items-center mr-4">
+                                        <EditableGroupTitle 
+                                            title={group.title || "Group"} 
+                                            onSave={(newTitle) => updateGroupTitle(groupIndex, newTitle)} 
+                                        />
+                                        <span className="text-gray-600 ml-2">
+                                            {group.timestamp} ({group.tabs.length} tabs)
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => openAllInThisWindow(groupIndex)}
+                                            className="text-xs px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                                        >
+                                            Open all
+                                        </button>
+                                        <button
+                                            onClick={() => openAllInNewWindow(groupIndex)}
+                                            className="text-xs px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded"
+                                        >
+                                            Open all in new window
+                                        </button>
+                                        <button
+                                            onClick={() => deleteGroup(groupIndex)}
+                                            className="text-xs px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded"
+                                        >
+                                            Delete group
+                                        </button>
+                                    </div>
+                                </div>
+                                <ul 
+                                    className={`m-0 list-none rounded-lg transition-colors ${
+                                        dropTarget?.groupIndex === groupIndex && dropTarget?.position === 'into' 
+                                            ? 'border-2 border-dashed border-blue-500' 
                                             : ''
                                     }`}
-                                    draggable="true"
-                                    onDragStart={handleDragStart(groupIndex, tabIndex, tabInfo)}
-                                    onDragEnd={handleDragEnd}
-                                    onDragOver={handleDragOver(groupIndex, tabIndex)}
-                                    onDrop={handleDrop(groupIndex, tabIndex)}
-                                    aria-label={`Drag to reorder: ${tabInfo.title || tabInfo.url}`}
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        // Handle keyboard navigation for accessibility
-                                        if (e.key === ' ' || e.key === 'Enter') {
-                                            // Space or Enter initiates drag
-                                            if (!draggedItem) {
-                                                e.preventDefault();
-                                                setDraggedItem({
-                                                    groupIndex,
-                                                    tabIndex,
-                                                    tabInfo
-                                                });
-                                                e.currentTarget.classList.add('dragging');
-                                            } else {
-                                                // If an item is already being dragged, this is a drop action
-                                                e.preventDefault();
-                                                handleDrop(groupIndex, tabIndex)(e as unknown as React.DragEvent<HTMLUListElement | HTMLLIElement>);
-                                            }
-                                        } else if (e.key === 'Escape' && draggedItem) {
-                                            // Escape cancels drag
-                                            e.preventDefault();
-                                            setDraggedItem(null);
-                                            setDragOverGroupIndex(null);
-                                            setDragOverTabIndex(null);
-                                            e.currentTarget.classList.remove('dragging');
-                                        }
-                                    }}
-                                    role="button"
+                                    role="region"
+                                    aria-label={`Tab group: ${group.title || "Group"}`}
+                                    onDragOver={(e) => handleDragOver(e, groupIndex, 'into')}
+                                    onDrop={(e) => handleDrop(e, groupIndex, 'into')}
                                 >
-                                    {tabInfo.favicon && (
-                                        <img
-                                            src={tabInfo.favicon}
-                                            alt=""
-                                            className="w-4 h-4 mr-2 object-contain"
-                                        />
-                                    )}
-                                    <a
-                                        href={tabInfo.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={async (e) => {
-                                            e.preventDefault();
-                                            await handleTabClick(groupIndex, tabInfo, tabIndex);
-                                        }}
-                                        title={tabInfo.url}
-                                        className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-full"
-                                    >
-                                        {tabInfo.title || tabInfo.url}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))
+                                    {group.tabs.map((tabInfo, tabIndex) => (
+                                        <li 
+                                            key={`${groupIndex}-${tabIndex}`} 
+                                            className={`flex items-center mb-2 pl-[0.2rem] rounded cursor-move ${
+                                                draggedItem?.groupIndex === groupIndex && 
+                                                draggedItem?.tabIndex === tabIndex ? 
+                                                'opacity-50' : ''
+                                            } hover:bg-gray-50`}
+                                            draggable
+                                            onDragStart={() => handleDragStart(groupIndex, tabIndex, tabInfo)}
+                                            onDragEnd={handleDragEnd}
+                                        >
+                                            {tabInfo.favicon && (
+                                                <img
+                                                    src={tabInfo.favicon}
+                                                    alt=""
+                                                    className="w-4 h-4 mr-2 object-contain"
+                                                    draggable="false"
+                                                />
+                                            )}
+                                            <a
+                                                href={tabInfo.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    await handleTabClick(groupIndex, tabInfo, tabIndex);
+                                                }}
+                                                title={tabInfo.url}
+                                                className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-full"
+                                                draggable="false"
+                                            >
+                                                {tabInfo.title || tabInfo.url}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            
+                            {/* Drop zone between groups */}
+                            {groupIndex < tabGroups.length - 1 && (
+                                <div
+                                    className={`transition-all h-4 -mt-2 mb-2 ${
+                                        draggedItem ? 'border-t-2 border-dashed' : ''
+                                    } ${
+                                        dropTarget?.groupIndex === groupIndex && 
+                                        dropTarget?.position === 'between' ? 
+                                        'border-blue-500' : 'border-transparent'
+                                    }`}
+                                    onDragOver={(e) => handleDragOver(e, groupIndex, 'between')}
+                                    onDrop={(e) => handleDrop(e, groupIndex, 'between')}
+                                />
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Drop zone for bottom of all groups */}
+                    <div
+                        className={`transition-all h-4 -mt-2 ${
+                            draggedItem ? 'border-t-2 border-dashed' : ''
+                        } ${
+                            dropTarget?.position === 'bottom' ? 'border-blue-500' : 'border-transparent'
+                        }`}
+                        onDragOver={(e) => handleDragOver(e, tabGroups.length - 1, 'bottom')}
+                        onDrop={(e) => handleDrop(e, tabGroups.length - 1, 'bottom')}
+                    />
+                </>
             )}
             
             <Footer className="mt-8 border-t pt-4" />
