@@ -60,8 +60,14 @@ function OpenSingleTabDisplay() {
     useEffect(() => {
         console.log("Setting up listener for pending windowId")
         const collectTabsFromPendingWindow = async () => {             // Check if there's a pendingWindowId in localStorage
-                const data = await chrome.storage.local.get({pendingWindowId: null});
+                const data = await chrome.storage.local.get({
+                    pendingWindowId: null,
+                    allowDuplicates: true,
+                    tabGroups: []
+                });
                 const pendingWindowId = data.pendingWindowId;
+                const allowDuplicates = data.allowDuplicates;
+                const existingGroups = data.tabGroups || [];
 
                 if (!pendingWindowId) {
                     console.log("No pending windowId found");
@@ -69,6 +75,7 @@ function OpenSingleTabDisplay() {
                 }
 
                 console.log("Found pending windowId:", pendingWindowId);
+                console.log("Allow duplicates setting:", allowDuplicates);
 
                 const currentWindowId = (await chrome.tabs.query({pinned: false, currentWindow: true}))[0].windowId;
 
@@ -81,34 +88,34 @@ function OpenSingleTabDisplay() {
                 const extensionBaseUrl = chrome.runtime.getURL(``);
                 const emptyTabUrl = "chrome://";
                 const firefoxEmptyTabUrl = "about:"; // Firefox equivalent of chrome://
+                // if duplicates are not allowed, we skip duplicated urls.
+                const existingUrls = allowDuplicates ? [] : existingGroups.flatMap(group => group.tabs.map(tab => tab.url));
 
                 let tabInfos = tabs
                     .filter(tab => !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl))
                     .filter(tab => !tab.url.startsWith(extensionBaseUrl))
+                    .filter(tab => !existingUrls.includes(tab.url))
                     .map((tab) => ({
                         url: tab.url,
                         title: tab.title || tab.url,
                         favicon: tab.favIconUrl || ""
                     }));
 
-                if (tabInfos.length === 0) {
-                    console.log("No valid tabs found in the specified window");
-                    return;
+                if (tabInfos.length > 0) {
+                    // Create a new tab group with current timestamp
+                    const newTabGroup: TabGroupStructure = {
+                        timestamp: new Date().toLocaleString(),
+                        tabs: tabInfos,
+                        title: "Group" // Default title for the group
+                    };
+
+                    // Get existing tab groups and add the new one
+                    const storageData = await chrome.storage.local.get({tabGroups: []});
+                    const updatedTabGroups = [newTabGroup, ...(storageData.tabGroups || [])];
+
+                    // Save the updated tab groups
+                    await chrome.storage.local.set({tabGroups: updatedTabGroups});
                 }
-
-                // Create a new tab group with current timestamp
-                const newTabGroup: TabGroupStructure = {
-                    timestamp: new Date().toLocaleString(),
-                    tabs: tabInfos,
-                    title: "Group" // Default title for the group
-                };
-
-                // Get existing tab groups and add the new one
-                const storageData = await chrome.storage.local.get({tabGroups: []});
-                const updatedTabGroups = [newTabGroup, ...(storageData.tabGroups || [])];
-
-                // Save the updated tab groups
-                await chrome.storage.local.set({tabGroups: updatedTabGroups});
 
                 // Finally do a cleanup. If the window is different, we simply close it
                 if(pendingWindowId != currentWindowId){

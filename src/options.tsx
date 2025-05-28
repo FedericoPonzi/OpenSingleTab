@@ -4,19 +4,34 @@ import Footer from "./components/Footer"
 
 function OptionsIndex() {
     const [keepTabsOpen, setKeepTabsOpen] = useState(false);
+    const [allowDuplicates, setAllowDuplicates] = useState(true);
 
-    // Load saved option when component mounts
+    // Load saved options when component mounts
     useEffect(() => {
-        chrome.storage.local.get({ keepTabsOpen: false }, (data) => {
+        chrome.storage.local.get({ 
+            keepTabsOpen: false,
+            allowDuplicates: true 
+        }, (data) => {
             setKeepTabsOpen(data.keepTabsOpen);
+            setAllowDuplicates(data.allowDuplicates);
         });
     }, []);
 
-    // Save option when it changes
+    // Save options when they change
     const handleKeepTabsOpenChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.checked;
         setKeepTabsOpen(newValue);
         chrome.storage.local.set({ keepTabsOpen: newValue }, () => {
+            if (chrome.runtime.lastError) {
+                console.error("Error saving option:", chrome.runtime.lastError);
+            }
+        });
+    };
+
+    const handleAllowDuplicatesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.checked;
+        setAllowDuplicates(newValue);
+        chrome.storage.local.set({ allowDuplicates: newValue }, () => {
             if (chrome.runtime.lastError) {
                 console.error("Error saving option:", chrome.runtime.lastError);
             }
@@ -41,6 +56,21 @@ function OptionsIndex() {
                 </label>
                 <p className="text-sm text-gray-500 mt-1 ml-7">
                     When enabled, tabs will remain open after sending them to OpenSingleTab.
+                </p>
+            </div>
+
+            <div className="mb-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={allowDuplicates} 
+                        onChange={handleAllowDuplicatesChange}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                    />
+                    <span className="text-gray-700">Allow duplicate URLs</span>
+                </label>
+                <p className="text-sm text-gray-500 mt-1 ml-7">
+                    When enabled, duplicate URLs will be allowed in tab groups. When disabled, duplicate URLs will be silently rejected.
                 </p>
             </div>
             
