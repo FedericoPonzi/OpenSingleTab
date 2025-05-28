@@ -1,140 +1,20 @@
-import React, {useState, useEffect, useRef} from "react";
+import React, {useState, useEffect} from "react";
 import "../style.css";
 import Footer from "../components/Footer";
-
-// Interface for tab information
-interface TabInfo {
-    url: string;
-    title: string;
-    favicon: string;
-}
-
-// Interface for tab group structure
-interface TabGroup {
-    timestamp: string;
-    tabs: TabInfo[];
-    title?: string; // Optional title field for the group
-}
-
-// EditableGroupTitle component for handling editable titles
-interface EditableGroupTitleProps {
-    title: string;
-    onSave: (newTitle: string) => void;
-}
-
-function EditableGroupTitle({ title, onSave }: EditableGroupTitleProps) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editedTitle, setEditedTitle] = useState(title);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const MAX_TITLE_LENGTH = 50; // Maximum title length
-
-    useEffect(() => {
-        // Focus the input when entering edit mode
-        if (isEditing && inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [isEditing]);
-
-    // Update local state if prop changes
-    useEffect(() => {
-        setEditedTitle(title);
-    }, [title]);
-
-    const handleEditClick = () => {
-        setIsEditing(true);
-    };
-
-    const handleSave = () => {
-        const trimmedTitle = editedTitle.trim();
-        if (trimmedTitle !== "" && trimmedTitle !== title) {
-            onSave(trimmedTitle.substring(0, MAX_TITLE_LENGTH));
-        } else {
-            // Reset to original title if empty or unchanged
-            setEditedTitle(title);
-        }
-        setIsEditing(false);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            handleSave();
-        } else if (e.key === "Escape") {
-            setEditedTitle(title);
-            setIsEditing(false);
-        }
-    };
-
-    return (
-        <div className="flex items-center">
-            {isEditing ? (
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={editedTitle}
-                    onChange={(e) => setEditedTitle(e.target.value)}
-                    onBlur={handleSave}
-                    onKeyDown={handleKeyDown}
-                    className="text-lg font-semibold mr-2 border-b-2 border-blue-500 focus:outline-none"
-                    maxLength={MAX_TITLE_LENGTH}
-                    aria-label="Edit group title"
-                    autoFocus
-                />
-            ) : (
-                <div 
-                    onClick={handleEditClick} 
-                    className="flex items-center cursor-pointer group"
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Edit group title"
-                    title="Click to edit group title"
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                            handleEditClick();
-                        }
-                    }}
-                >
-                    <span className="text-lg font-semibold mr-1 group-hover:border-b-2 group-hover:border-gray-400">
-                        {title}
-                    </span>
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-4 w-4 text-gray-500 opacity-0 group-hover:opacity-100" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                        aria-hidden="true"
-                    >
-                        <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth={2} 
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
-                        />
-                    </svg>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// Interface for drag state
-interface DragState {
-    groupIndex: number;
-    tabIndex: number;
-    tab: TabInfo;
-}
-
-// Interface for drop target state
-interface DropTargetState {
-    groupIndex: number;
-    position: 'top' | 'bottom' | 'between' | 'into';
-}
+import type {
+    TabGroupStructure,
+    TabInfo,
+    DragState,
+    DropTargetState,
+} from "../types/tabs";
+import TabGroup from "../components/TabGroup";
+import StatusMessage from "../components/StatusMessage";
+import MenuDropdown from "../components/MenuDropdown";
 
 function OpenSingleTabDisplay() {
-    const [tabGroups, setTabGroups] = useState<TabGroup[]>([]);
+    const [tabGroups, setTabGroups] = useState<TabGroupStructure[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string>("");
-    const statusRef = useRef<HTMLDivElement>(null);
     const [draggedItem, setDraggedItem] = useState<DragState | null>(null);
     const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
 
@@ -217,7 +97,7 @@ function OpenSingleTabDisplay() {
                 }
 
                 // Create a new tab group with current timestamp
-                const newTabGroup: TabGroup = {
+                const newTabGroup: TabGroupStructure = {
                     timestamp: new Date().toLocaleString(),
                     tabs: tabInfos,
                     title: "Group" // Default title for the group
@@ -408,55 +288,21 @@ function OpenSingleTabDisplay() {
                     <h2 className="text-2xl font-bold mr-4">OpenSingleTab</h2>
                     <h4 className="text-gray-600">Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
                 </div>
-                <div className="relative menu-container">
-                    <button 
-                        className="text-gray-700 hover:text-blue-600 focus:outline-none"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        aria-label="Menu"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                        </svg>
-                    </button>
-                    {isMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                            <div className="py-1">
-                                <a 
-                                    href="import-export.html" 
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                    Import / Export tabs
-                                </a>
-                                <a 
-                                    href="../options.html" 
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                    Options
-                                </a>
-                                <a 
-                                    href="https://github.com/FedericoPonzi/OpenSingleTab" 
-                                    target="_blank"
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                    Info/Feedback
-                                </a>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <MenuDropdown isOpen={isMenuOpen} onToggle={() => setIsMenuOpen(!isMenuOpen)} />
             </div>
             
-            {/* Status message for screen readers and visual feedback */}
-            {statusMessage && (
-                <div 
-                    ref={statusRef}
-                    className="bg-blue-100 text-blue-800 p-2 mb-4 rounded-md border border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800"
-                    role="status"
-                    aria-live="polite"
-                >
-                    {statusMessage}
-                </div>
-            )}
+            <StatusMessage message={statusMessage} />
+
+            {/* Drop zone for top of all groups */}
+            <div
+                className={`transition-all h-4 -mt-2 mb-2 ${
+                    draggedItem ? 'border-t-2 border-dashed' : ''
+                } ${
+                    dropTarget?.position === 'top' ? 'border-blue-500' : 'border-transparent'
+                }`}
+                onDragOver={(e) => handleDragOver(e, 0, 'top')}
+                onDrop={(e) => handleDrop(e, 0, 'top')}
+            />
 
             {/* Drop zone for top of all groups */}
             <div
@@ -475,87 +321,21 @@ function OpenSingleTabDisplay() {
                 <>
                     {tabGroups.map((group, groupIndex) => (
                         <div key={groupIndex}>
-                            <div className="mb-2 pb-1 last:border-b-0">
-                                <div className="flex items-center mb-2">
-                                    <div className="flex items-center mr-4">
-                                        <EditableGroupTitle 
-                                            title={group.title || "Group"} 
-                                            onSave={(newTitle) => updateGroupTitle(groupIndex, newTitle)} 
-                                        />
-                                        <span className="text-gray-600 ml-2">
-                                            {group.timestamp} ({group.tabs.length} tabs)
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => openAllInThisWindow(groupIndex)}
-                                            className="text-xs px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
-                                        >
-                                            Open all
-                                        </button>
-                                        <button
-                                            onClick={() => openAllInNewWindow(groupIndex)}
-                                            className="text-xs px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded"
-                                        >
-                                            Open all in new window
-                                        </button>
-                                        <button
-                                            onClick={() => deleteGroup(groupIndex)}
-                                            className="text-xs px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded"
-                                        >
-                                            Delete group
-                                        </button>
-                                    </div>
-                                </div>
-                                <ul 
-                                    className={`m-0 list-none rounded-lg transition-colors ${
-                                        dropTarget?.groupIndex === groupIndex && dropTarget?.position === 'into' 
-                                            ? 'border-2 border-dashed border-blue-500' 
-                                            : ''
-                                    }`}
-                                    role="region"
-                                    aria-label={`Tab group: ${group.title || "Group"}`}
-                                    onDragOver={(e) => handleDragOver(e, groupIndex, 'into')}
-                                    onDrop={(e) => handleDrop(e, groupIndex, 'into')}
-                                >
-                                    {group.tabs.map((tabInfo, tabIndex) => (
-                                        <li 
-                                            key={`${groupIndex}-${tabIndex}`} 
-                                            className={`flex items-center mb-2 pl-[0.2rem] rounded cursor-move ${
-                                                draggedItem?.groupIndex === groupIndex && 
-                                                draggedItem?.tabIndex === tabIndex ? 
-                                                'opacity-50' : ''
-                                            } hover:bg-gray-50`}
-                                            draggable
-                                            onDragStart={() => handleDragStart(groupIndex, tabIndex, tabInfo)}
-                                            onDragEnd={handleDragEnd}
-                                        >
-                                            {tabInfo.favicon && (
-                                                <img
-                                                    src={tabInfo.favicon}
-                                                    alt=""
-                                                    className="w-4 h-4 mr-2 object-contain"
-                                                    draggable="false"
-                                                />
-                                            )}
-                                            <a
-                                                href={tabInfo.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={async (e) => {
-                                                    e.preventDefault();
-                                                    await handleTabClick(groupIndex, tabInfo, tabIndex);
-                                                }}
-                                                title={tabInfo.url}
-                                                className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-full"
-                                                draggable="false"
-                                            >
-                                                {tabInfo.title || tabInfo.url}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <TabGroup
+                                group={group}
+                                groupIndex={groupIndex}
+                                onUpdateTitle={updateGroupTitle}
+                                onOpenAllInThisWindow={openAllInThisWindow}
+                                onOpenAllInNewWindow={openAllInNewWindow}
+                                onDeleteGroup={deleteGroup}
+                                onTabClick={handleTabClick}
+                                draggedItem={draggedItem}
+                                dropTarget={dropTarget}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={handleDragOver}
+                                onDrop={handleDrop}
+                            />
                             
                             {/* Drop zone between groups */}
                             {groupIndex < tabGroups.length - 1 && (
