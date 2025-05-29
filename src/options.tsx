@@ -5,6 +5,7 @@ import Footer from "./components/Footer"
 function OptionsIndex() {
     const [keepTabsOpen, setKeepTabsOpen] = useState(false);
     const [allowDuplicates, setAllowDuplicates] = useState(true);
+    const [includePinnedTabs, setIncludePinnedTabs] = useState(true);
     const [windowRestoreMode, setWindowRestoreMode] = useState<'smart' | 'new' | 'current'>('current');
 
     // Load saved options when component mounts
@@ -12,10 +13,12 @@ function OptionsIndex() {
         chrome.storage.local.get({ 
             keepTabsOpen: false,
             allowDuplicates: true,
+            includePinnedTabs: true,
             windowRestoreMode: 'current'
         }, (data) => {
             setKeepTabsOpen(data.keepTabsOpen);
             setAllowDuplicates(data.allowDuplicates);
+            setIncludePinnedTabs(data.includePinnedTabs);
             setWindowRestoreMode(data.windowRestoreMode);
         });
     }, []);
@@ -35,6 +38,16 @@ function OptionsIndex() {
         const newValue = event.target.checked;
         setAllowDuplicates(newValue);
         chrome.storage.local.set({ allowDuplicates: newValue }, () => {
+            if (chrome.runtime.lastError) {
+                console.error("Error saving option:", chrome.runtime.lastError);
+            }
+        });
+    };
+
+    const handleIncludePinnedTabsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.checked;
+        setIncludePinnedTabs(newValue);
+        chrome.storage.local.set({ includePinnedTabs: newValue }, () => {
             if (chrome.runtime.lastError) {
                 console.error("Error saving option:", chrome.runtime.lastError);
             }
@@ -89,6 +102,21 @@ function OptionsIndex() {
                 </label>
                 <p className="text-sm text-gray-500 mt-1 ml-7">
                     When enabled, duplicate URLs will be allowed in tab groups. When disabled, duplicate URLs will be silently rejected.
+                </p>
+            </div>
+
+            <div className="mb-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={includePinnedTabs} 
+                        onChange={handleIncludePinnedTabsChange}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                    />
+                    <span className="text-gray-700">Pinned tabs:</span>
+                </label>
+                <p className="text-sm text-gray-500 mt-1 ml-7">
+                    When enabled, pinned tabs will be sent to OpenSingleTab. When disabled, pinned tabs will be kept in their original window.
                 </p>
             </div>
 

@@ -29,12 +29,17 @@ interface TabGroup {
  * tabs from the pending window id.
  */
 async function storeTabs() {
-    const query_args = {pinned: false, currentWindow: true};
+    // Get the includePinnedTabs setting
+    const { includePinnedTabs } = await chrome.storage.local.get({ includePinnedTabs: true });
+    const query_args = {currentWindow: true};
     const tabs = await chrome.tabs.query(query_args);
 
     // Store the current windowId in localStorage
     if (tabs.length > 0 && tabs[0].windowId) {
-        await chrome.storage.local.set({pendingWindowId: tabs[0].windowId});
+        await chrome.storage.local.set({
+            pendingWindowId: tabs[0].windowId,
+            includePinnedTabs: includePinnedTabs // Pass the setting to display.tsx
+        });
         console.log("Stored windowId in localStorage:", tabs[0].windowId);
         await openDisplayPage();
     }

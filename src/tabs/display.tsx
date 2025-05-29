@@ -63,10 +63,12 @@ function OpenSingleTabDisplay() {
                 const data = await chrome.storage.local.get({
                     pendingWindowId: null,
                     allowDuplicates: true,
+                    includePinnedTabs: true,
                     tabGroups: []
                 });
                 const pendingWindowId = data.pendingWindowId;
                 const allowDuplicates = data.allowDuplicates;
+                const includePinnedTabs = data.includePinnedTabs;
                 const existingGroups = data.tabGroups || [];
 
                 if (!pendingWindowId) {
@@ -76,8 +78,9 @@ function OpenSingleTabDisplay() {
 
                 console.log("Found pending windowId:", pendingWindowId);
                 console.log("Allow duplicates setting:", allowDuplicates);
+                console.log("Include pinned tabs setting:", includePinnedTabs);
 
-                const currentWindowId = (await chrome.tabs.query({pinned: false, currentWindow: true}))[0].windowId;
+                const currentWindowId = (await chrome.tabs.query({currentWindow: true}))[0].windowId;
 
                 // Clear the pendingWindowId immediately to prevent duplicate processing
                 await chrome.storage.local.remove("pendingWindowId");
@@ -95,6 +98,7 @@ function OpenSingleTabDisplay() {
                     .filter(tab => !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl))
                     .filter(tab => !tab.url.startsWith(extensionBaseUrl))
                     .filter(tab => !existingUrls.includes(tab.url))
+                    .filter(tab => includePinnedTabs || !tab.pinned) // Only include pinned tabs if the setting is enabled
                     .map((tab) => ({
                         url: tab.url,
                         title: tab.title || tab.url,
@@ -117,16 +121,31 @@ function OpenSingleTabDisplay() {
                     await chrome.storage.local.set({tabGroups: updatedTabGroups});
                 }
 
-                // Finally do a cleanup. If the window is different, we simply close it
+                // Finally do a cleanup. If the window is different, we simply close it if there are no pinned tabs
                 if(pendingWindowId != currentWindowId){
-                    await chrome.windows.remove(pendingWindowId);
+                    // Check if there are any pinned tabs in the window when includePinnedTabs is false
+                    const hasPinnedTabs = !includePinnedTabs && tabs.some(tab => tab.pinned);
+                    if (!hasPinnedTabs) {
+                        await chrome.windows.remove(pendingWindowId);
+                    } else {
+                        // If there are pinned tabs, only close non-pinned tabs
+                        for (const tab of tabs) {
+                            const isExtTab = tab.url.startsWith(extensionBaseUrl);
+                            if (!tab.pinned && !isExtTab && !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl)) {
+                                await chrome.tabs.remove(tab.id);
+                            }
+                        }
+                    }
                     return;
                 }
                 // Otherwise we need to iterate through all the tabs
                 for (const tab of tabs) {
                     const isExtTab = tab.url.startsWith(extensionBaseUrl);
                     if (!isExtTab && !tab.url.startsWith(emptyTabUrl) && !tab.url.startsWith(firefoxEmptyTabUrl)) {
-                        await chrome.tabs.remove(tab.id);
+                        // Only close non-pinned tabs if includePinnedTabs is false
+                        if (includePinnedTabs || !tab.pinned) {
+                            await chrome.tabs.remove(tab.id);
+                        }
                     }
                 }
         };
