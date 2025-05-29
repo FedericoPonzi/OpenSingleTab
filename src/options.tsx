@@ -53,10 +53,15 @@ function OptionsIndex() {
 
     return (
         <div className="p-6 max-w-2xl mx-auto">
+            <a
+                href={`tabs/display.html`}
+                className="text-blue-600 hover:text-blue-800 underline block mb-4"
+            >
+                Display OpenSingleTab
+            </a>
             <h1 className="text-2xl font-bold mb-4">
                 OpenSingleTab Options
             </h1>
-            
             <div className="mb-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                     <input 
@@ -126,13 +131,6 @@ function OptionsIndex() {
                 </div>
             </div>
             
-            <a 
-                href={`tabs/display.html`}
-                className="text-blue-600 hover:text-blue-800 underline"
-            >
-                Display OpenSingleTab
-            </a>
-
             <Footer className="mt-8" />
         </div>
     )
