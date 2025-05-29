@@ -36,8 +36,7 @@ export interface TabGroupProps {
     group: TabGroupStructure;
     groupIndex: number;
     onUpdateTitle: (groupIndex: number, newTitle: string) => Promise<void>;
-    onOpenAllInThisWindow: (groupIndex: number) => Promise<void>;
-    onOpenAllInNewWindow: (groupIndex: number) => Promise<void>;
+    onRestoreGroup: (groupIndex: number) => Promise<void>;
     onDeleteGroup: (groupIndex: number) => Promise<void>;
     onTabClick: (groupIndex: number, tabInfo: TabInfo, tabIndex: number) => Promise<void>;
     draggedItem: DragState | null;
@@ -62,8 +61,7 @@ export interface TabItemProps {
 // Props for GroupActions component
 export interface GroupActionsProps {
     groupIndex: number;
-    onOpenAllInThisWindow: (groupIndex: number) => Promise<void>;
-    onOpenAllInNewWindow: (groupIndex: number) => Promise<void>;
+    onRestoreGroup: (groupIndex: number) => Promise<void>;
     onDeleteGroup: (groupIndex: number) => Promise<void>;
 }
 

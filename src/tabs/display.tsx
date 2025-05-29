@@ -145,7 +145,7 @@ function OpenSingleTabDisplay() {
     }, []);
 
     const handleTabClick = async (groupIndex: number, tabInfo: TabInfo, tabIndex: number) => {
-        // Open the clicked tab URL in a new tab
+        // For single tab restoration, always open in current window
         await chrome.tabs.create({url: tabInfo.url, active: false});
 
         // Remove only the specific tab that was clicked
@@ -158,13 +158,13 @@ function OpenSingleTabDisplay() {
         setTabGroups(filteredGroups);
         await chrome.storage.local.set({tabGroups: filteredGroups});
     };
-    const openGroupInWindow = async (groupIndex: number, windowId: number, startIndex: number = 0) => {
+    const openGroupInWindow = async (groupIndex: number, windowId: number | undefined, startIndex: number = 0) => {
         const tabs = tabGroups[groupIndex].tabs;
         await deleteGroup(groupIndex);
         if (tabs.length == 0) {
             return;
         }
-     for (let i = startIndex; i < tabs.length; i++) {
+        for (let i = startIndex; i < tabs.length; i++) {
             let tab = tabs[i];
             console.log("Opening tab: ", tab.url);
             var t = windowId == undefined ? {url: tab.url, active: false} : {
@@ -177,6 +177,7 @@ function OpenSingleTabDisplay() {
         }
         console.log("Done opening group: ", groupIndex);
     }
+
     const openAllInNewWindow = async (groupIndex: number) => {
         const tabs = tabGroups[groupIndex].tabs;
         // Create a new window with the first URL
@@ -188,6 +189,33 @@ function OpenSingleTabDisplay() {
     const openAllInThisWindow = async (groupIndex: number) => {
         console.log("Opening All in this window, group: ", groupIndex);
         await openGroupInWindow(groupIndex, undefined);
+    };
+
+    const restoreTabGroup = async (groupIndex: number) => {
+        // Get the window restore mode setting
+        const { windowRestoreMode } = await chrome.storage.local.get({ windowRestoreMode: 'current' });
+        
+        if (windowRestoreMode === 'current') {
+            await openAllInThisWindow(groupIndex);
+            return;
+        }
+
+        if (windowRestoreMode === 'new') {
+            await openAllInNewWindow(groupIndex);
+            return;
+        }
+
+        // For 'smart' mode, check if current window has only the OpenSingleTab tab
+        const currentTabs = await chrome.tabs.query({ currentWindow: true });
+        const extensionBaseUrl = chrome.runtime.getURL(``);
+        const isOnlyExtensionTab = currentTabs.length === 1 && 
+                                  currentTabs[0].url?.startsWith(extensionBaseUrl);
+
+        if (isOnlyExtensionTab) {
+            await openAllInThisWindow(groupIndex);
+        } else {
+            await openAllInNewWindow(groupIndex);
+        }
     };
 
     const deleteGroup = async (groupIndex: number) => {
@@ -332,8 +360,7 @@ function OpenSingleTabDisplay() {
                                 group={group}
                                 groupIndex={groupIndex}
                                 onUpdateTitle={updateGroupTitle}
-                                onOpenAllInThisWindow={openAllInThisWindow}
-                                onOpenAllInNewWindow={openAllInNewWindow}
+                                onRestoreGroup={restoreTabGroup}
                                 onDeleteGroup={deleteGroup}
                                 onTabClick={handleTabClick}
                                 draggedItem={draggedItem}

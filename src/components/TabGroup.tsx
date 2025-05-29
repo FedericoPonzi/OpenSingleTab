@@ -8,8 +8,7 @@ const TabGroup: React.FC<TabGroupProps> = ({
     group,
     groupIndex,
     onUpdateTitle,
-    onOpenAllInThisWindow,
-    onOpenAllInNewWindow,
+    onRestoreGroup,
     onDeleteGroup,
     onTabClick,
     draggedItem,
@@ -34,8 +33,7 @@ const TabGroup: React.FC<TabGroupProps> = ({
                     </div>
                     <GroupActions
                         groupIndex={groupIndex}
-                        onOpenAllInThisWindow={onOpenAllInThisWindow}
-                        onOpenAllInNewWindow={onOpenAllInNewWindow}
+                        onRestoreGroup={onRestoreGroup}
                         onDeleteGroup={onDeleteGroup}
                     />
                 </div>

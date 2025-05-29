@@ -5,15 +5,18 @@ import Footer from "./components/Footer"
 function OptionsIndex() {
     const [keepTabsOpen, setKeepTabsOpen] = useState(false);
     const [allowDuplicates, setAllowDuplicates] = useState(true);
+    const [windowRestoreMode, setWindowRestoreMode] = useState<'smart' | 'new' | 'current'>('current');
 
     // Load saved options when component mounts
     useEffect(() => {
         chrome.storage.local.get({ 
             keepTabsOpen: false,
-            allowDuplicates: true 
+            allowDuplicates: true,
+            windowRestoreMode: 'current'
         }, (data) => {
             setKeepTabsOpen(data.keepTabsOpen);
             setAllowDuplicates(data.allowDuplicates);
+            setWindowRestoreMode(data.windowRestoreMode);
         });
     }, []);
 
@@ -32,6 +35,16 @@ function OptionsIndex() {
         const newValue = event.target.checked;
         setAllowDuplicates(newValue);
         chrome.storage.local.set({ allowDuplicates: newValue }, () => {
+            if (chrome.runtime.lastError) {
+                console.error("Error saving option:", chrome.runtime.lastError);
+            }
+        });
+    };
+
+    const handleWindowRestoreModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.value as 'smart' | 'new' | 'current';
+        setWindowRestoreMode(newValue);
+        chrome.storage.local.set({ windowRestoreMode: newValue }, () => {
             if (chrome.runtime.lastError) {
                 console.error("Error saving option:", chrome.runtime.lastError);
             }
@@ -72,6 +85,45 @@ function OptionsIndex() {
                 <p className="text-sm text-gray-500 mt-1 ml-7">
                     When enabled, duplicate URLs will be allowed in tab groups. When disabled, duplicate URLs will be silently rejected.
                 </p>
+            </div>
+
+            <div className="mb-4">
+                <h3 className="text-gray-700 font-medium mb-2">When a tab group is restored, send the tabs to:</h3>
+                <div className="space-y-2 ml-2">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="windowRestoreMode"
+                            value="smart"
+                            checked={windowRestoreMode === 'smart'}
+                            onChange={handleWindowRestoreModeChange}
+                            className="form-radio h-4 w-4 text-blue-600"
+                        />
+                        <span className="text-gray-700">A new window, unless OpenSingleTab is the only tab in the current window</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="windowRestoreMode"
+                            value="new"
+                            checked={windowRestoreMode === 'new'}
+                            onChange={handleWindowRestoreModeChange}
+                            className="form-radio h-4 w-4 text-blue-600"
+                        />
+                        <span className="text-gray-700">Always a new window</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="windowRestoreMode"
+                            value="current"
+                            checked={windowRestoreMode === 'current'}
+                            onChange={handleWindowRestoreModeChange}
+                            className="form-radio h-4 w-4 text-blue-600"
+                        />
+                        <span className="text-gray-700">Always the current window</span>
+                    </label>
+                </div>
             </div>
             
             <a 
