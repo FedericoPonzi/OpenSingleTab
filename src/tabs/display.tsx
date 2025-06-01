@@ -18,6 +18,89 @@ function OpenSingleTabDisplay() {
     const [draggedItem, setDraggedItem] = useState<DragState | null>(null);
     const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
 
+    const bringAllTabsIntoOpenSingleTab = async () => {
+        try {
+            const settings = await chrome.storage.local.get({
+                allowDuplicates: true,
+                includePinnedTabs: true,
+            });
+            const { allowDuplicates, includePinnedTabs } = settings;
+
+            const windows = await chrome.windows.getAll({ populate: true });
+
+            const allTabInfos: TabInfo[] = [];
+            const tabsToClose: number[] = [];
+
+            let existingUrls: string[] = [];
+            if (!allowDuplicates) {
+                tabGroups.forEach(group => {
+                    group.tabs.forEach(tab => {
+                        if (tab.url) {
+                            existingUrls.push(tab.url);
+                        }
+                    });
+                });
+            }
+
+            const extensionBaseUrl = chrome.runtime.getURL(``);
+            const emptyTabUrl = "chrome://"; // Covers chrome://newtab, chrome://history, etc.
+            const firefoxEmptyTabUrl = "about:"; // Firefox equivalent for about:newtab, about:blank etc.
+
+            for (const window of windows) {
+                if (window.tabs) {
+                    for (const tab of window.tabs) {
+                        // Apply filters
+                        if (tab.url &&
+                            !tab.url.startsWith(extensionBaseUrl) &&
+                            !tab.url.startsWith(emptyTabUrl) &&
+                            !tab.url.startsWith(firefoxEmptyTabUrl) &&
+                            (includePinnedTabs || !tab.pinned) &&
+                            (allowDuplicates || (tab.url && !existingUrls.includes(tab.url)))) {
+
+                            const tabInfo: TabInfo = {
+                                url: tab.url,
+                                title: tab.title || tab.url,
+                                favicon: tab.favIconUrl || "",
+                            };
+                            allTabInfos.push(tabInfo);
+                            if (tab.id) {
+                                tabsToClose.push(tab.id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (allTabInfos.length > 0) {
+                const newTabGroup: TabGroupStructure = {
+                    timestamp: new Date().toLocaleString(),
+                    tabs: allTabInfos,
+                    title: `All Imported Tabs - ${new Date().toLocaleDateString()}` // Using a simpler date format for title
+                };
+
+                const updatedTabGroups = [newTabGroup, ...tabGroups];
+                await chrome.storage.local.set({ tabGroups: updatedTabGroups });
+                setTabGroups(updatedTabGroups); // Update component state
+
+                for (const tabId of tabsToClose) {
+                    try {
+                        await chrome.tabs.remove(tabId);
+                    } catch (closeError) {
+                        // Log error if a tab couldn't be closed, but continue
+                        console.warn(`Could not close tab ${tabId}:`, closeError);
+                    }
+                }
+                setStatusMessage(`Successfully imported ${allTabInfos.length} tabs.`);
+            } else {
+                setStatusMessage("No new tabs to import.");
+            }
+
+        } catch (error) {
+            console.error("Error bringing all tabs into OpenSingleTab:", error);
+            setStatusMessage("Error importing tabs. See console for details.");
+        }
+    };
+
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -340,7 +423,14 @@ function OpenSingleTabDisplay() {
             <div className="flex items-baseline justify-between mb-4">
                 <div className="flex items-baseline">
                     <h2 className="text-2xl font-bold mr-4">OpenSingleTab</h2>
-                    <h4 className="text-gray-600">Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
+                    <h4 className="text-gray-600 mr-4">Total: {totalTabs} tabs in {tabGroups.length} groups</h4>
+                    <button
+                        onClick={bringAllTabsIntoOpenSingleTab}
+                        className="ml-auto text-sm text-blue-600 hover:underline focus:outline-none px-3 py-1 rounded-md hover:bg-blue-50"
+                        title="Import all open tabs (excluding this extension and empty tabs) into a new group here"
+                    >
+                        Bring all tabs here
+                    </button>
                 </div>
                 <MenuDropdown isOpen={isMenuOpen} onToggle={() => setIsMenuOpen(!isMenuOpen)} />
             </div>
