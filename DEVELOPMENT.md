@@ -26,3 +26,7 @@ npm run build
 
 This should create a production bundle for your extension, ready to be zipped and published to the stores - 
 you will need the key.json file, which is included in GitHub secrets for automated submissions.
+
+## New version release
+The publishing to stores is automated with githbu CI and is triggered by pushing tags with format of "v###". 
+First update package.json version, then push a new tag for the corresponding version.
