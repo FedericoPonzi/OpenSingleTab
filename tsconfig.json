@@ -14,7 +14,9 @@
         "./src/*"
       ]
     },
-    "baseUrl": "."
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "types": ["jest"]
   }
 }
 
