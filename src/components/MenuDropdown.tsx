@@ -1,10 +1,10 @@
 import React from 'react';
-import { MenuDropdownProps } from '../types/tabs';
+import type {MenuDropdownProps} from '~types/tabs';
 
 const MenuDropdown: React.FC<MenuDropdownProps> = ({ isOpen, onToggle }) => {
     return (
         <div className="relative menu-container">
-            <button 
+            <button
                 className="text-gray-700 hover:text-blue-600 focus:outline-none"
                 onClick={onToggle}
                 aria-label="Menu"
@@ -16,20 +16,20 @@ const MenuDropdown: React.FC<MenuDropdownProps> = ({ isOpen, onToggle }) => {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                     <div className="py-1">
-                        <a 
-                            href="import-export.html" 
+                        <a
+                            href="import-export.html"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                             Import / Export tabs
                         </a>
-                        <a 
-                            href="../options.html" 
+                        <a
+                            href="../options.html"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                             Options
                         </a>
-                        <a 
-                            href="https://github.com/FedericoPonzi/OpenSingleTab" 
+                        <a
+                            href="https://github.com/FedericoPonzi/OpenSingleTab"
                             target="_blank"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
