@@ -4,6 +4,7 @@ import Footer from "./components/Footer"
 
 function OptionsIndex() {
     const [keepTabsOpen, setKeepTabsOpen] = useState(false);
+  const [displayOnStartup, setDisplayOnStartup] = useState(false);
     const [allowDuplicates, setAllowDuplicates] = useState(true);
     const [includePinnedTabs, setIncludePinnedTabs] = useState(true);
     const [windowRestoreMode, setWindowRestoreMode] = useState<'smart' | 'new' | 'current'>('current');
@@ -20,6 +21,10 @@ function OptionsIndex() {
             setAllowDuplicates(data.allowDuplicates);
             setIncludePinnedTabs(data.includePinnedTabs);
             setWindowRestoreMode(data.windowRestoreMode);
+      });
+      chrome.storage.local.get({ displayOnStartup: false }, (result) => {
+        setDisplayOnStartup(result.displayOnStartup);
+        setLoading(false);
         });
     }, []);
 
@@ -33,6 +38,14 @@ function OptionsIndex() {
             }
         });
     };
+
+  const handleDisplayOnStartupChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { checked } = event.target;
+    setDisplayOnStartup(checked);
+    chrome.storage.local.set({ displayOnStartup: checked });
+  };
 
     const handleAllowDuplicatesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.checked;
@@ -87,6 +100,22 @@ function OptionsIndex() {
                 </label>
                 <p className="text-sm text-gray-500 mt-1 ml-7">
                     When enabled, tabs will remain open after sending them to OpenSingleTab.
+                </p>
+            </div>
+
+            <div className="mb-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={displayOnStartup}
+                        onChange={handleDisplayOnStartupChange}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                    />
+                    <span className="text-gray-700">Display OpenSingleTab when your web browser starts up</span>
+                </label>
+                <p className="text-sm text-gray-500 mt-1 ml-7">
+                    If you check this, the OpenSingleTab extension will be automatically
+                    displayed when you start your web browser.
                 </p>
             </div>
 
