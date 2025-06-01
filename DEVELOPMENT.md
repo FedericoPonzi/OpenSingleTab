@@ -30,3 +30,7 @@ you will need the key.json file, which is included in GitHub secrets for automat
 ## New version release
 The publishing to stores is automated with githbu CI and is triggered by pushing tags with format of "v###". 
 First update package.json version, then push a new tag for the corresponding version.
+```
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin v1.0.0
+```
