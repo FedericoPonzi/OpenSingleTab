@@ -19,7 +19,15 @@ async function openDisplayPage() {
   }
 }
 
+chrome.runtime.onInstalled.addListener(() => {
+  checkAndOpenDisplay();
+});
+
 chrome.runtime.onStartup.addListener(() => {
+  checkAndOpenDisplay();
+});
+
+function checkAndOpenDisplay() {
   chrome.storage.local.get({ displayOnStartup: false }, (result) => {
     if (chrome.runtime.lastError) {
       console.error("Error getting displayOnStartup option:", chrome.runtime.lastError);
@@ -29,4 +37,4 @@ chrome.runtime.onStartup.addListener(() => {
       openDisplayPage();
     }
   });
-});
+}
