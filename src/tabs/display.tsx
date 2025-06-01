@@ -54,7 +54,7 @@ function OpenSingleTabDisplay() {
                             !tab.url.startsWith(extensionBaseUrl) &&
                             !tab.url.startsWith(emptyTabUrl) &&
                             !tab.url.startsWith(firefoxEmptyTabUrl) &&
-                            (includePinnedTabs || !tab.pinned) &&
+                            (!includePinnedTabs || !tab.pinned) &&
                             (allowDuplicates || (tab.url && !existingUrls.includes(tab.url)))) {
 
                             const tabInfo: TabInfo = {

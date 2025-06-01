@@ -1,5 +1,5 @@
 import React from 'react';
-import { MenuDropdownProps } from '../types/tabs';
+import type {MenuDropdownProps} from '~types/tabs';
 
 const MenuDropdown: React.FC<MenuDropdownProps> = ({ isOpen, onToggle }) => {
     return (
@@ -14,7 +14,7 @@ const MenuDropdown: React.FC<MenuDropdownProps> = ({ isOpen, onToggle }) => {
                 </svg>
             </button>
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"> {/* Reverted width to w-48 */}
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                     <div className="py-1">
                         <a
                             href="import-export.html"
