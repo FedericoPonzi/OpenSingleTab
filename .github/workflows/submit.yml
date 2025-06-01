@@ -46,12 +46,54 @@ jobs:
       - name: Package the extension into a zip artifact for firefox
         run: pnpm build --target=firefox-mv3 --zip
 
-      - name: Browser Platform Publish
-        uses: PlasmoHQ/bpp@v3
+      - name: Upload Chrome artifact
+        uses: actions/upload-artifact@v3
         with:
-          keys: ${{ secrets.SUBMIT_KEYS }}
-          artifact: build/chrome-mv3-prod.zip
-          chrome-file: "build/chrome-mv3-prod.zip"
-          firefox-file: "build/firefox-mv3-prod.zip"
-          #version-file: "src/manifest.json"
-          verbose: true
+          name: chrome-mv3-prod
+          path: build/chrome-mv3-prod.zip
+
+      - name: Upload Firefox artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: firefox-mv3-prod
+          path: build/firefox-mv3-prod.zip
+
+publish-chrome:
+  needs: build
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Chrome artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: chrome-mv3-prod
+        path: build
+
+    - name: Publish to Chrome Web Store
+      uses: PlasmoHQ/bpp@v3
+      with:
+        keys: ${{ secrets.SUBMIT_KEYS }}
+        chrome-file: "build/chrome-mv3-prod.zip"
+        verbose: true
+
+publish-firefox:
+  needs: build
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Firefox artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: firefox-mv3-prod
+        path: build
+
+    - name: Publish to Firefox Add-ons
+      uses: PlasmoHQ/bpp@v3
+      with:
+        keys: ${{ secrets.SUBMIT_KEYS }}
+        firefox-file: "build/firefox-mv3-prod.zip"
+        verbose: true
