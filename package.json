@@ -41,6 +41,9 @@
     "permissions": [
       "tabs",
       "storage"
-    ]
+    ],
+    "background": {
+      "service_worker": "src/background.js"
+    }
   }
 }
