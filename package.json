@@ -1,7 +1,7 @@
 {
   "name": "open-single-tab",
   "displayName": "OpenSingleTab",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A browser extension to keep your tabs under control. Free and Open Source.",
   "author": "Federico Ponzi <me@fponzi.me>",
   "scripts": {
@@ -44,6 +44,11 @@
     ],
     "background": {
       "service_worker": "src/background.js"
+    },
+    "browser_specific_settings": {
+      "gecko": {
+        "id": "{89c004be-1e2d-469e-83ee-efc29c29785c}"
+      }
     }
   }
 }
