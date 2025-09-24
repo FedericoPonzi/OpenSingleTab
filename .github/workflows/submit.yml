@@ -47,53 +47,53 @@ jobs:
         run: pnpm build --target=firefox-mv3 --zip
 
       - name: Upload Chrome artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: chrome-mv3-prod
           path: build/chrome-mv3-prod.zip
 
       - name: Upload Firefox artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firefox-mv3-prod
           path: build/firefox-mv3-prod.zip
 
-publish-chrome:
-  needs: build
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  publish-chrome:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download Chrome artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: chrome-mv3-prod
-        path: build
+      - name: Download Chrome artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-mv3-prod
+          path: build
 
-    - name: Publish to Chrome Web Store
-      uses: PlasmoHQ/bpp@v3
-      with:
-        keys: ${{ secrets.SUBMIT_KEYS }}
-        chrome-file: "build/chrome-mv3-prod.zip"
-        verbose: true
+      - name: Publish to Chrome Web Store
+        uses: PlasmoHQ/bpp@v3
+        with:
+          keys: ${{ secrets.SUBMIT_KEYS }}
+          chrome-file: "build/chrome-mv3-prod.zip"
+          verbose: true
 
-publish-firefox:
-  needs: build
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  publish-firefox:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download Firefox artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: firefox-mv3-prod
-        path: build
+      - name: Download Firefox artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firefox-mv3-prod
+          path: build
 
-    - name: Publish to Firefox Add-ons
-      uses: PlasmoHQ/bpp@v3
-      with:
-        keys: ${{ secrets.SUBMIT_KEYS }}
-        firefox-file: "build/firefox-mv3-prod.zip"
-        verbose: true
+      - name: Publish to Firefox Add-ons
+        uses: PlasmoHQ/bpp@v3
+        with:
+          keys: ${{ secrets.SUBMIT_KEYS }}
+          firefox-file: "build/firefox-mv3-prod.zip"
+          verbose: true
