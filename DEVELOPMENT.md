@@ -34,3 +34,6 @@ First update package.json version, then push a new tag for the corresponding ver
 git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
 ```
+
+## Firefox validation timeout
+If it times out it means something is wrong with the artifact. Try to upload a new release using their website, and it should tell you the validation errors it is seeing.
