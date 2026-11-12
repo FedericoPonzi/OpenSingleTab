@@ -11,7 +11,12 @@ function OptionsIndex() {
 
     // Load saved options when component mounts
     useEffect(() => {
-        chrome.storage.local.get({ 
+        chrome.storage.local.get<{
+            keepTabsOpen: boolean;
+            allowDuplicates: boolean;
+            includePinnedTabs: boolean;
+            windowRestoreMode: 'smart' | 'new' | 'current';
+        }>({
             keepTabsOpen: false,
             allowDuplicates: true,
             includePinnedTabs: true,
@@ -22,9 +27,8 @@ function OptionsIndex() {
             setIncludePinnedTabs(data.includePinnedTabs);
             setWindowRestoreMode(data.windowRestoreMode);
       });
-      chrome.storage.local.get({ displayOnStartup: false }, (result) => {
+      chrome.storage.local.get<{ displayOnStartup: boolean }>({ displayOnStartup: false }, (result) => {
         setDisplayOnStartup(result.displayOnStartup);
-        setLoading(false);
         });
     }, []);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { EditableGroupTitleProps } from '../types/tabs';
+import type { EditableGroupTitleProps } from '../types/tabs';
 
 const EditableGroupTitle: React.FC<EditableGroupTitleProps> = ({ title, onSave }) => {
     const [isEditing, setIsEditing] = useState(false);

@@ -77,7 +77,7 @@ function ImportExportPage() {
     
     // Load saved tab groups when component mounts
     useEffect(() => {
-        chrome.storage.local.get(["tabGroups"], (data) => {
+        chrome.storage.local.get<{ tabGroups: TabGroup[] }>(["tabGroups"], (data) => {
             if (data.tabGroups) {
                 setTabGroups(data.tabGroups);
                 generateExportText(data.tabGroups, addGroupTitles, asMarkdown);

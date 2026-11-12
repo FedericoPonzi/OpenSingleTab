@@ -118,7 +118,7 @@ function OpenSingleTabDisplay() {
 
     useEffect(() => {
         // Retrieve stored tab groups from local storage
-        chrome.storage.local.get(["tabGroups", "savedTabs"], (data) => {
+        chrome.storage.local.get<{ tabGroups: TabGroupStructure[] }>(["tabGroups"], (data) => {
             setTabGroups(data.tabGroups);
         });
 
@@ -143,7 +143,12 @@ function OpenSingleTabDisplay() {
     useEffect(() => {
         console.log("Setting up listener for pending windowId")
         const collectTabsFromPendingWindow = async () => {             // Check if there's a pendingWindowId in localStorage
-                const data = await chrome.storage.local.get({
+                const data = await chrome.storage.local.get<{
+                    pendingWindowId: number | null;
+                    allowDuplicates: boolean;
+                    includePinnedTabs: boolean;
+                    tabGroups: TabGroupStructure[];
+                }>({
                     pendingWindowId: null,
                     allowDuplicates: true,
                     includePinnedTabs: true,
@@ -197,7 +202,7 @@ function OpenSingleTabDisplay() {
                     };
 
                     // Get existing tab groups and add the new one
-                    const storageData = await chrome.storage.local.get({tabGroups: []});
+                    const storageData = await chrome.storage.local.get<{ tabGroups: TabGroupStructure[] }>({tabGroups: []});
                     const updatedTabGroups = [newTabGroup, ...(storageData.tabGroups || [])];
 
                     // Save the updated tab groups
@@ -340,7 +345,7 @@ function OpenSingleTabDisplay() {
         } catch (error) {
             console.error("Error updating group title:", error);
             // Revert to original state if there's an error
-            const data = await chrome.storage.local.get({tabGroups: []});
+            const data = await chrome.storage.local.get<{ tabGroups: TabGroupStructure[] }>({tabGroups: []});
             setTabGroups(data.tabGroups || []);
         }
     };
